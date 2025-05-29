@@ -31,5 +31,15 @@ export class TypeBlocking {
   init(): void {
     // TODO: Add initialization code.
     console.info('Typeblocking initialized on workspace:', this.workspace.id);
+    // FIXME: Quick and dirty way to add typeblocks to all internal blocks
+    // except for IF; just for development.
+    Blockly.Blocks['controls_if'].typeblock = Blockly.Msg.CONTROLS_IF_MSG_IF;
+    for (const blockType in Blockly.Blocks) {
+      if (blockType.split('_').length > 1) {
+        if (!Blockly.Blocks[blockType].typeblock) {
+          Blockly.Blocks[blockType].typeblock = blockType;
+        }
+      }
+    }
   }
 }
