@@ -1,0 +1,54 @@
+{
+  "name": "blockly-typeblocking",
+  "version": "0.0.0",
+  "description": "A Blockly plugin.",
+  "scripts": {
+    "audit:fix": "blockly-scripts auditFix",
+    "build": "blockly-scripts build",
+    "clean": "blockly-scripts clean",
+    "lint": "blockly-scripts lint",
+    "predeploy": "blockly-scripts predeploy",
+    "start": "blockly-scripts start",
+    "test": "blockly-scripts test"
+  },
+  "main": "./dist/index.js",
+  "module": "./src/index.js",
+  "unpkg": "./dist/index.js",
+  "author": "",
+  "keywords": [
+    "blockly",
+    "blockly-plugin",
+    "typeblocking"
+  ],
+  "homepage": "git@github.com:josmas/blockly-plugins/tree/master/typeblocking#readme",
+  "bugs": {
+    "url": "git@github.com:josmas/blockly-plugins/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:josmas/blockly-plugins.git",
+    "directory": "typeblocking"
+  },
+  "license": "Apache-2.0",
+  "directories": {
+    "dist": "dist",
+    "src": "src"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "devDependencies": {
+    "blockly": "^12.0.0",
+    "@blockly/dev-scripts": "^4.0.9",
+    "@blockly/dev-tools": "^9.0.1",
+    "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "blockly": "^12.0.0"
+  },
+  "publishConfig": {},
+  "eslintConfig": {
+    "extends": "@blockly/eslint-config"
+  }
+}
