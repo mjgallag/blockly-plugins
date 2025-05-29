@@ -1,20 +1,19 @@
 /**
  * @license
- * Copyright 2023 Google LLC
+ * Copyright 2025 App Inventor Foundation
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// TODO: Edit plugin overview.
 /**
- * @fileoverview Plugin overview.
+ * @fileoverview Plugin to provide TypeBlocking to Blockly. Blocks can be
+ * created by typing instead of having to navigate through the toolbox.
  */
 import * as Blockly from 'blockly/core';
 
-// TODO: Rename plugin and edit plugin description.
 /**
- * Plugin description.
+ * Create blocks by typing instead of navigating through the toolbox.
  */
-export class Plugin {
+export class TypeBlocking {
   /** The workspace. */
   protected workspace: Blockly.WorkspaceSvg;
   /**
@@ -31,5 +30,6 @@ export class Plugin {
    */
   init(): void {
     // TODO: Add initialization code.
+    console.info('Typeblocking initialized on workspace:', this.workspace.id);
   }
 }

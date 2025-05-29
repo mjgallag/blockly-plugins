@@ -10,29 +10,27 @@
 
 import * as Blockly from 'blockly';
 import {toolboxCategories, createPlayground} from '@blockly/dev-tools';
-import {Plugin} from '../src/index';
+import {TypeBlocking} from '../src/index';
 
 /**
  * Create a workspace.
- *
  * @param blocklyDiv The blockly container div.
  * @param options The Blockly options.
  * @returns The created workspace.
  */
 function createWorkspace(
-  blocklyDiv: HTMLElement,
-  options: Blockly.BlocklyOptions,
+    blocklyDiv: HTMLElement,
+    options: Blockly.BlocklyOptions,
 ): Blockly.WorkspaceSvg {
   const workspace = Blockly.inject(blocklyDiv, options);
 
-  // TODO: Initialize your plugin here.
-  const plugin = new Plugin(workspace);
+  const plugin = new TypeBlocking(workspace);
   plugin.init();
 
   return workspace;
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
   const defaultOptions = {
     toolbox: toolboxCategories,
   };
