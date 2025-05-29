@@ -1,4 +1,3 @@
-
 import * as Blockly from 'blockly/core';
 /**
  *
@@ -55,7 +54,7 @@ export function installFloatingInput(ws: Blockly.WorkspaceSvg): void {
     const close = () => Blockly.WidgetDiv.hide();
     input.addEventListener('keydown', (kev: KeyboardEvent) => {
       if (kev.key === 'Enter' || kev.key === 'Escape') {
-        // read input.value if needed
+        // read input.value here if needed
         close();
       }
       kev.stopPropagation();
@@ -82,9 +81,19 @@ export function installFloatingInput(ws: Blockly.WorkspaceSvg): void {
     },
   }, true);
 
-  // NOTE: Map keyCodes 0-222 (0 catches non-ASCII browsers)
+  // NOTE: Plain keys (no modifiers)
   for (let code = 0; code <= 222; ++code) {
     Blockly.ShortcutRegistry.registry.addKeyMapping(code, SHORTCUT, true);
   }
-}
 
+  // NOTE: Shift+key variants – enables capitals and symbols
+  const SHIFT = (Blockly.ShortcutRegistry as any).modifierKeys?.Shift ??
+    (Blockly.ShortcutRegistry as any).modifierKeys?.SHIFT ??
+    16; // fall-back keyCode
+  for (let code = 0; code <= 222; ++code) {
+    const shifted = Blockly.ShortcutRegistry.registry.createSerializedKey(
+        code, [SHIFT]
+    );
+    Blockly.ShortcutRegistry.registry.addKeyMapping(shifted, SHORTCUT, true);
+  }
+}
