@@ -9,6 +9,7 @@
  * created by typing instead of having to navigate through the toolbox.
  */
 import * as Blockly from 'blockly/core';
+import {installFloatingInput} from './floating-input';
 
 /**
  * Create blocks by typing instead of navigating through the toolbox.
@@ -29,8 +30,6 @@ export class TypeBlocking {
    * Initialize.
    */
   init(): void {
-    // TODO: Add initialization code.
-    console.info('Typeblocking initialized on workspace:', this.workspace.id);
     // FIXME: Quick and dirty way to add typeblocks to all internal blocks
     // except for IF; just for development.
     Blockly.Blocks['controls_if'].typeblock = Blockly.Msg.CONTROLS_IF_MSG_IF;
@@ -41,5 +40,11 @@ export class TypeBlocking {
         }
       }
     }
+
+    installFloatingInput(this.workspace);
+    // Workspace must be focusable to receive key events
+    this.workspace.getInjectionDiv().setAttribute('tabindex', '0');
+
+    console.info('Typeblocking initialized on workspace:', this.workspace.id);
   }
 }
