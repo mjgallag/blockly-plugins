@@ -1,0 +1,29 @@
+.fi-input {
+  font-family: monospace;
+  min-width: 200px;
+  padding: 2px 4px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+.fi-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  background: #fff;
+  min-width: 200px;
+  font-family: monospace;
+}
+
+.fi-list li {
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.fi-hl,
+.fi-list li:hover {
+  background: #bde4ff;
+}
