@@ -36,8 +36,10 @@ export function installFloatingInput(
     true,
   );
 
+  const SKIP = new Set([8, 46]); // 8 = Backspace, 46 = Delete
   // NOTE: Plain keys (no modifiers)
   for (let code = 0; code <= 222; ++code) {
+    if (SKIP.has(code)) continue;
     Blockly.ShortcutRegistry.registry.addKeyMapping(code, SHORTCUT, true);
   }
 
@@ -47,6 +49,7 @@ export function installFloatingInput(
     (Blockly.ShortcutRegistry as any).modifierKeys?.SHIFT ??
     16; // fall-back keyCode
   for (let code = 0; code <= 222; ++code) {
+    if (SKIP.has(code)) continue;
     const shifted = Blockly.ShortcutRegistry.registry.createSerializedKey(
       code,
       [SHIFT],

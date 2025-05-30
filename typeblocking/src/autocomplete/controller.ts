@@ -56,9 +56,48 @@ export class FloatingInputController {
   }
 
   private choose(value: string): void {
-    console.log('chosen:', value); // TODO: create block / etc.
+    const newBlock = this.renderBlock(value);
+    if (newBlock) {
+      this.moveBlock(newBlock);
+    }
+
     Blockly.WidgetDiv.hide();
     this.ws.getInjectionDiv().focus();
+  }
+
+  private renderBlock(value: string): Blockly.BlockSvg | undefined {
+    let blockType = value;
+    if (!Blockly.Blocks[blockType]) {
+      for (const t in Blockly.Blocks) {
+        if (Blockly.Blocks[t].typeblock === value) {
+          blockType = t;
+          break;
+        }
+      }
+    }
+    if (!Blockly.Blocks[blockType]) {
+      console.warn(`No block registered for “${value}”`);
+      return;
+    }
+
+    const block = this.ws.newBlock(blockType);
+    block.initSvg();
+    block.render();
+    return block;
+  }
+
+  private moveBlock(block: Blockly.BlockSvg): void {
+    const metrics = this.ws.getMetrics(); // viewport & scroll
+    const divRect = this.ws.getInjectionDiv().getBoundingClientRect();
+
+    const clientX = this.lastX || divRect.left + divRect.width / 2;
+    const clientY = this.lastY || divRect.top + divRect.height / 2;
+
+    const x = (clientX - divRect.left) / this.ws.scale + metrics.viewLeft;
+    const y = (clientY - divRect.top) / this.ws.scale + metrics.viewTop;
+
+    block.moveBy(x, y);
+    block.select(); // give it focus
   }
 
   private positionWidgetDiv(): void {
