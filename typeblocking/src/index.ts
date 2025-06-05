@@ -9,8 +9,6 @@
  * created by typing instead of having to navigate through the toolbox.
  */
 import * as Blockly from 'blockly/core';
-// import {installFloatingInput} from './floating-input';
-// import {installFloatingInput} from './f-input';
 import {installFloatingInput} from './autocomplete/autocomplete';
 
 /**

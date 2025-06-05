@@ -1,9 +1,10 @@
+// FIXME: Not used anymore. Delete (eventually) after testing
 import * as Blockly from 'blockly/core';
 /**
  *
  * @param ws
  */
-export function installFloatingInput(ws: Blockly.WorkspaceSvg): void {
+function installFloatingInput(ws: Blockly.WorkspaceSvg): void {
   const SHORTCUT = 'floatInput';
 
   let lastClientX = 0;
