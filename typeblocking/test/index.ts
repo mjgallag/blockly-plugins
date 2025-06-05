@@ -30,7 +30,7 @@ function createWorkspace(
   return workspace;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
   const defaultOptions = {
     toolbox: toolboxCategories,
   };
@@ -38,5 +38,5 @@ document.addEventListener('DOMContentLoaded', function() {
   if (!rootElement) {
     throw new Error(`div with id 'root' not found`);
   }
-  createPlayground(rootElement, createWorkspace, defaultOptions);
+  await createPlayground(rootElement, createWorkspace, defaultOptions);
 });

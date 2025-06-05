@@ -2,8 +2,6 @@ import * as Blockly from 'blockly/core';
 import {FloatingInputController} from './controller';
 import {Option, Matcher} from '../types';
 
-const SHORTCUT = 'floatInput';
-
 export interface InstallOptions {
   options: Option[];
   matcher?: Matcher;
@@ -13,17 +11,17 @@ export interface InstallOptions {
  * Installs the floating input controller on the given workspace.
  */
 export function installFloatingInput(
-  ws: Blockly.WorkspaceSvg,
-  {options, matcher}: InstallOptions,
+    shortcutName: string,
+    ws: Blockly.WorkspaceSvg,
+    {options, matcher}: InstallOptions,
 ): void {
   const controller = new FloatingInputController(ws, {options, matcher});
 
   const isPrintable = (k: KeyboardEvent) =>
     k.key.length === 1 && !k.ctrlKey && !k.metaKey && !k.altKey;
 
-  Blockly.ShortcutRegistry.registry.register(
-    {
-      name: SHORTCUT,
+  Blockly.ShortcutRegistry.registry.register({
+      name: shortcutName,
       preconditionFn: () =>
         !(Blockly as any).FieldTextInput.activeField &&
         !Blockly.WidgetDiv.isVisible(),
@@ -40,7 +38,7 @@ export function installFloatingInput(
   // NOTE: Plain keys (no modifiers)
   for (let code = 0; code <= 222; ++code) {
     if (SKIP.has(code)) continue;
-    Blockly.ShortcutRegistry.registry.addKeyMapping(code, SHORTCUT, true);
+    Blockly.ShortcutRegistry.registry.addKeyMapping(code, shortcutName, true);
   }
 
   // NOTE: Shift+key variants – enables capitals and symbols
@@ -54,6 +52,9 @@ export function installFloatingInput(
       code,
       [SHIFT],
     );
-    Blockly.ShortcutRegistry.registry.addKeyMapping(shifted, SHORTCUT, true);
+    Blockly.ShortcutRegistry.registry.addKeyMapping(shifted, shortcutName, true);
   }
+
+  // NOTE: this is just for testing purposes
+  // setTimeout(controller.dispose.bind(controller), 4000); // 24 hours
 }

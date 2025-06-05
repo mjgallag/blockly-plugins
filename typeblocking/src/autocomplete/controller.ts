@@ -11,18 +11,23 @@ export class FloatingInputController {
   private readonly options: Option[];
 
   constructor(
-    private ws: Blockly.WorkspaceSvg,
+    private readonly ws: Blockly.WorkspaceSvg,
     opts: {options: Option[]; matcher?: Matcher},
   ) {
+    this.ws = ws;
     this.options = opts.options;
     this.matcher = opts.matcher ?? substringMatcher;
 
-    /* remember mouse for positioning */
-    ws.getInjectionDiv().addEventListener('pointermove', (ev) => {
-      this.lastX = ev.clientX;
-      this.lastY = ev.clientY;
-    });
+    const pointer = ws.getInjectionDiv().addEventListener('pointermove', this.pointerMoveListener);
   }
+
+  dispose(): void {
+    this.ws.getInjectionDiv().removeEventListener('pointermove', this.pointerMoveListener)
+    // TODO: remove event listeners - I will need access to them
+    //this.renderer?.inputEl.removeEventListener('input', this.renderer?.inputEl);
+  }
+
+  pointerMoveListener = (ev: PointerEvent) => { this.lastX = ev.x; this.lastY = ev.y };
 
   /** Called by the shortcut to pop up the widget. */
   show(initial = ''): void {
@@ -62,6 +67,7 @@ export class FloatingInputController {
     }
 
     Blockly.WidgetDiv.hide();
+    // TODO: does this interfere with the new block's focus?
     this.ws.getInjectionDiv().focus();
   }
 

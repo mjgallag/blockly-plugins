@@ -11,6 +11,8 @@
 import * as Blockly from 'blockly/core';
 import {installFloatingInput} from './autocomplete/autocomplete';
 
+const SHORTCUT = 'floatInput';
+
 /**
  * Create blocks by typing instead of navigating through the toolbox.
  */
@@ -43,7 +45,29 @@ export class TypeBlocking {
       }
     }
 
-    installFloatingInput(this.workspace, {options: allTypeblockTexts});
+    installFloatingInput(SHORTCUT, this.workspace, {options: allTypeblockTexts});
     console.info('Typeblocking initialized on workspace:', this.workspace.id);
+  }
+
+  /**
+   * Dispose of the plugin.
+   */
+  dispose(): void {
+    if (!this.workspace) return;
+    const ws = this.workspace;
+
+    // TODO: remove event listeners - I will need access to them
+    // const injectionDiv = ws.getInjectionDiv();
+    // injectionDiv.removeEventListener('pointermove', this.pointerMoveHandler);
+    // injectionDiv.removeEventListener('keydown', this.keyHandler);
+    Blockly.ShortcutRegistry.registry.unregister(SHORTCUT);
+
+    Blockly.DropDownDiv.hideWithoutAnimation();
+
+
+    const id = ws.id;
+    // @ts-expect-error – intentional reference break for GC.
+    this.workspace = null;
+    console.info(`Typeblocking disposed from workspace ${id}`);
   }
 }
