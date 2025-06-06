@@ -1,5 +1,5 @@
 {
-  "name": "blockly-typeblocking",
+  "name": "@mit-app-inventor/blockly-typeblocking",
   "version": "0.0.0",
   "description": "A Blockly plugin to create blocks by typing.",
   "scripts": {
