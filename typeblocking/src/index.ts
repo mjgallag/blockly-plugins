@@ -9,3 +9,13 @@
  * created by typing instead of having to navigate through the toolbox.
  */
 export {TypeBlocking} from './typeblocking';
+
+// Types for customization - power users can implement these interfaces
+export type {
+  Option,
+  Matcher,
+  OptionGenerator,
+  ScopeAnalyzer
+} from './types';
+
+// NOTE: there might be a case for exporting the default Options Generator and Analyzer
