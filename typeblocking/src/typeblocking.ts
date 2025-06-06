@@ -159,7 +159,7 @@ export class TypeBlocking {
             true,
         );
 
-        const SKIP = new Set([8, 46]); // 8 = Backspace, 46 = Delete
+        const SKIP = new Set([8, 13, 46]); // 8 = Backspace, 13 = Enter, 46 = Delete
         // NOTE: Plain keys (no modifiers)
         for (let code = 0; code <= 222; ++code) {
             if (SKIP.has(code)) continue;
