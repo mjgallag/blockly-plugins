@@ -23,7 +23,6 @@ export class BlockPositioner {
     const y = (y_client - divRect.top) / this.workspace.scale + metrics.viewTop;
 
     block.moveBy(x, y);
-    console.log('the new code is running free')
     block.select();
   }
 }

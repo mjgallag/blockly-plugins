@@ -2,8 +2,8 @@ import * as Blockly from 'blockly/core';
 import {Option, Matcher} from '../types';
 import {substringMatcher} from './matcher';
 import {Renderer} from './renderer';
-import {BlockFactory} from './block-factory';
-import {BlockPositioner} from './block-positioner';
+import {BlockFactory} from '../block-actions/block-factory';
+import {BlockPositioner} from '../block-actions/block-positioner';
 
 /** Orchestrates Blockly, Renderer, and matching logic. */
 export class FloatingInputController {
