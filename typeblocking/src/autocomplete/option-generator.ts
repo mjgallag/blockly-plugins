@@ -7,7 +7,7 @@ import {Option, OptionGenerator, ScopeAnalyzer} from '../types';
 export class WorkspaceOptionGenerator implements OptionGenerator {
   private scopeAnalyzer?: ScopeAnalyzer;
 
-  constructor(private readonly workspace: Blockly.WorkspaceSvg) {}
+  constructor(protected readonly workspace: Blockly.WorkspaceSvg) {}
 
   setScopeAnalyzer(analyzer: ScopeAnalyzer): void {
     this.scopeAnalyzer = analyzer;

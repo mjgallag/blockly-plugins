@@ -1,10 +1,13 @@
 import * as Blockly from 'blockly/core';
-import {Option, Matcher} from '../types';
+import {Option, Matcher, OptionGenerator} from '../types';
 import {substringMatcher} from './matcher';
 import {Renderer} from './renderer';
 import {BlockFactory} from '../block-actions/block-factory';
+import {SmartBlockFactory} from '../block-actions/smart-block-factory';
 import {BlockPositioner} from '../block-actions/block-positioner';
 import {SmartBlockPositioner, SmartPositioningConfig} from '../block-actions/smart-block-positioner';
+import {PatternConfig} from '../input-patterns/pattern-types';
+import {SmartOptionGenerator} from './smart-option-generator';
 
 /** Orchestrates Blockly, Renderer, and matching logic. */
 export class FloatingInputController {
@@ -14,15 +17,30 @@ export class FloatingInputController {
   private readonly options: Option[];
   private readonly blockFactory: BlockFactory;
   private readonly blockPositioner: BlockPositioner;
+  private readonly optionGenerator?: OptionGenerator;
 
   constructor(
     private readonly ws: Blockly.WorkspaceSvg,
-    opts: {options: Option[]; matcher?: Matcher; enableSmartConnection?: boolean; smartConfig?: SmartPositioningConfig},
+    opts: {
+      options: Option[]; 
+      matcher?: Matcher; 
+      enableSmartConnection?: boolean; 
+      smartConfig?: SmartPositioningConfig;
+      enablePatternRecognition?: boolean;
+      patternConfig?: PatternConfig;
+      optionGenerator?: OptionGenerator;
+    },
   ) {
     this.ws = ws;
     this.options = opts.options;
     this.matcher = opts.matcher ?? substringMatcher;
-    this.blockFactory = new BlockFactory(ws);
+    this.optionGenerator = opts.optionGenerator;
+
+    if (opts.enablePatternRecognition !== false) { // Default to true
+      this.blockFactory = new SmartBlockFactory(ws, opts.patternConfig);
+    } else {
+      this.blockFactory = new BlockFactory(ws);
+    }
 
     if (opts.enableSmartConnection !== false) { // Default to true
       this.blockPositioner = new SmartBlockPositioner(ws, opts.smartConfig);
@@ -56,8 +74,21 @@ export class FloatingInputController {
 
     this.positionWidgetDiv();
 
-    const refresh = () =>
-      renderer.setSuggestions(this.matcher(this.options, renderer.query));
+    const refresh = () => {
+      let currentOptions = this.options;
+
+      if (this.optionGenerator instanceof SmartOptionGenerator) {
+        console.debug('TypeBlocking: Using smart option generation for query:', renderer.query);
+        currentOptions = this.optionGenerator.generateOptionsForInput(renderer.query);
+        console.debug('TypeBlocking: Generated', currentOptions.length, 'options:', currentOptions.slice(0, 5));
+      } else {
+        console.debug('TypeBlocking: Using static options, generator type:', typeof this.optionGenerator);
+      }
+      
+      const matchedOptions = this.matcher(currentOptions, renderer.query);
+      console.debug('TypeBlocking: After matching, got', matchedOptions.length, 'options:', matchedOptions.slice(0, 5));
+      renderer.setSuggestions(matchedOptions);
+    };
     renderer.inputEl.addEventListener('input', refresh);
     refresh();
 
@@ -73,9 +104,15 @@ export class FloatingInputController {
   }
 
   private choose(value: string): void {
+    console.debug('TypeBlocking: Choosing value:', value);
+    console.debug('TypeBlocking: Block factory type:', this.blockFactory.constructor.name);
+    
     const newBlock = this.blockFactory.createBlock(value);
     if (newBlock) {
+      console.debug('TypeBlocking: Successfully created block:', newBlock.type);
       this.blockPositioner.positionBlock(newBlock, this.lastX, this.lastY);
+    } else {
+      console.warn('TypeBlocking: Failed to create block for value:', value);
     }
 
     Blockly.WidgetDiv.hide();

@@ -3,6 +3,7 @@ import {Option, Matcher, OptionGenerator, WorkspaceStateTracker} from '../types'
 import {FloatingInputController} from './controller';
 import {substringMatcher} from './matcher';
 import {SmartPositioningConfig} from '../block-actions/smart-block-positioner';
+import {PatternConfig} from '../input-patterns/pattern-types';
 
 interface DynamicControllerOptions {
   options: Option[];
@@ -11,6 +12,8 @@ interface DynamicControllerOptions {
   stateTracker?: WorkspaceStateTracker;
   enableSmartConnection?: boolean;
   smartConfig?: SmartPositioningConfig;
+  enablePatternRecognition?: boolean;
+  patternConfig?: PatternConfig;
 }
 
 /**
@@ -18,7 +21,7 @@ interface DynamicControllerOptions {
  */
 // TODO: the parent class might not be necessary anymore. Consider removing it.
 export class DynamicFloatingInputController extends FloatingInputController {
-  private optionGenerator?: OptionGenerator;
+  private dynamicOptionGenerator?: OptionGenerator;
   private stateTracker?: WorkspaceStateTracker;
   private cachedOptions?: Option[];
   private staticOptions: Option[];
@@ -31,16 +34,19 @@ export class DynamicFloatingInputController extends FloatingInputController {
       options: opts.options,
       matcher: opts.matcher ?? substringMatcher,
       enableSmartConnection: opts.enableSmartConnection,
-      smartConfig: opts.smartConfig
+      smartConfig: opts.smartConfig,
+      enablePatternRecognition: opts.enablePatternRecognition,
+      patternConfig: opts.patternConfig,
+      optionGenerator: opts.optionGenerator // Pass option generator to parent
     });
 
     this.staticOptions = opts.options;
-    this.optionGenerator = opts.optionGenerator;
+    this.dynamicOptionGenerator = opts.optionGenerator;
     this.stateTracker = opts.stateTracker;
   }
 
   protected getCurrentOptions(): Option[] {
-    if (!this.optionGenerator || !this.stateTracker) {
+    if (!this.dynamicOptionGenerator || !this.stateTracker) {
       return this.staticOptions;
     }
 
@@ -55,7 +61,7 @@ export class DynamicFloatingInputController extends FloatingInputController {
    * Lazy load options from the generator.
    */
   private lazyLoadOptions(): void {
-    if (!this.optionGenerator || !this.stateTracker) {
+    if (!this.dynamicOptionGenerator || !this.stateTracker) {
       return;
     }
 
@@ -63,7 +69,7 @@ export class DynamicFloatingInputController extends FloatingInputController {
     const startTime = performance.now();
 
     try {
-      this.cachedOptions = this.optionGenerator.generateOptions();
+      this.cachedOptions = this.dynamicOptionGenerator.generateOptions();
 
       if ('markReloaded' in this.stateTracker) {
         (this.stateTracker as any).markReloaded();
@@ -88,7 +94,7 @@ export class DynamicFloatingInputController extends FloatingInputController {
 
   dispose(): void {
     this.cachedOptions = undefined;
-    this.optionGenerator = undefined;
+    this.dynamicOptionGenerator = undefined;
     this.stateTracker = undefined;
     super.dispose();
   }

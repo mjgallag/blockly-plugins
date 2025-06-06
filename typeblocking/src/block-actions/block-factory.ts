@@ -4,7 +4,7 @@ import * as Blockly from 'blockly/core';
  * Utility class for creating blocks from type identifiers.
  */
 export class BlockFactory {
-  constructor(private readonly workspace: Blockly.WorkspaceSvg) {}
+  constructor(protected readonly workspace: Blockly.WorkspaceSvg) {}
 
   /**
    * Creates and renders a block from a type identifier.

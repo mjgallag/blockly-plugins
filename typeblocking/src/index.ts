@@ -24,6 +24,6 @@ export type {
   ConnectionContext,
   ConnectionResult
 } from './block-actions/connection-strategies';
-export type {SmartPositioningConfig} from './block-actions/smart-block-positioner';
 
-// NOTE: there might be a case for exporting the default Options Generator and Analyzer
+// NOTE: there might be a case for exporting the default Options Generator, Analyzer, PositionConfig
+// and the types for input patterns.

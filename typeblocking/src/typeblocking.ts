@@ -2,10 +2,12 @@ import * as Blockly from "blockly/core";
 import {SHORTCUT} from "./constants";
 import {Option, Matcher, OptionGenerator, WorkspaceStateTracker} from './types';
 import {WorkspaceOptionGenerator} from './autocomplete/option-generator';
+import {SmartOptionGenerator} from './autocomplete/smart-option-generator';
 import {DefaultWorkspaceStateTracker} from './autocomplete/workspace-state-tracker';
 import {BasicScopeAnalyzer} from './autocomplete/scope-analyzer';
 import {DynamicFloatingInputController} from './autocomplete/dynamic-controller';
 import {SmartPositioningConfig} from './block-actions/smart-block-positioner';
+import {PatternConfig} from './input-patterns/pattern-types';
 
 export interface InstallOptions {
     options?: Option[];
@@ -14,6 +16,8 @@ export interface InstallOptions {
     enableDynamicOptions?: boolean;
     enableSmartConnection?: boolean;
     smartConfig?: SmartPositioningConfig;
+    enablePatternRecognition?: boolean;
+    patternConfig?: PatternConfig;
 }
 /**
  * Create blocks by typing instead of navigating through the toolbox.
@@ -42,7 +46,11 @@ export class TypeBlocking {
     }
 
     private setupDynamicOptions(options: InstallOptions): void {
-        this.optionGenerator = options.optionGenerator || new WorkspaceOptionGenerator(this.workspace);
+        if (options.enablePatternRecognition !== false) { // Default to true
+            this.optionGenerator = options.optionGenerator || new SmartOptionGenerator(this.workspace, options.patternConfig);
+        } else {
+            this.optionGenerator = options.optionGenerator || new WorkspaceOptionGenerator(this.workspace);
+        }
 
         if (this.optionGenerator instanceof WorkspaceOptionGenerator) {
             const scopeAnalyzer = new BasicScopeAnalyzer(this.workspace);
@@ -55,7 +63,9 @@ export class TypeBlocking {
             options: [], // Will be generated dynamically
             matcher: options.matcher,
             enableSmartConnection: options.enableSmartConnection,
-            smartConfig: options.smartConfig
+            smartConfig: options.smartConfig,
+            enablePatternRecognition: options.enablePatternRecognition,
+            patternConfig: options.patternConfig
         });
     }
 
@@ -70,7 +80,9 @@ export class TypeBlocking {
             options: allTypeblockTexts,
             matcher: options.matcher,
             enableSmartConnection: options.enableSmartConnection,
-            smartConfig: options.smartConfig
+            smartConfig: options.smartConfig,
+            enablePatternRecognition: options.enablePatternRecognition,
+            patternConfig: options.patternConfig
         });
     }
 
@@ -115,7 +127,7 @@ export class TypeBlocking {
         console.info(`Typeblocking disposed from workspace ${id}`);
     }
 
-    installFloatingInput({options = [], matcher, enableSmartConnection, smartConfig}: InstallOptions): void {
+    installFloatingInput({options = [], matcher, enableSmartConnection, smartConfig, enablePatternRecognition, patternConfig}: InstallOptions): void {
         this.controller = new DynamicFloatingInputController(
             this.workspace,
             {
@@ -124,7 +136,9 @@ export class TypeBlocking {
                 optionGenerator: this.optionGenerator,
                 stateTracker: this.stateTracker,
                 enableSmartConnection,
-                smartConfig
+                smartConfig,
+                enablePatternRecognition,
+                patternConfig
             }
         );
 
