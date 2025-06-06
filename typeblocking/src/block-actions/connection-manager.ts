@@ -1,5 +1,4 @@
 import * as Blockly from 'blockly/core';
-import {BlockPositioner} from './block-positioner';
 import {
   ConnectionStrategy,
   ConnectionContext,
@@ -10,7 +9,7 @@ import {
   WrapperConnector
 } from './connection-strategies';
 
-export interface SmartPositioningConfig {
+export interface ConnectionConfig {
   enableAutoConnection?: boolean;
   connectionRadius?: number;
   maxNearbyBlocks?: number;
@@ -18,15 +17,16 @@ export interface SmartPositioningConfig {
 }
 
 /**
- * Enhanced block positioner that attempts intelligent connections.
+ * Manages smart block connections using configurable strategies.
  */
-export class SmartBlockPositioner extends BlockPositioner {
-  private config: Required<SmartPositioningConfig>;
+export class ConnectionManager {
+  private config: Required<ConnectionConfig>;
   private connectionStrategies: ConnectionStrategy[];
 
-  constructor(workspace: Blockly.WorkspaceSvg, config: SmartPositioningConfig = {}) {
-    super(workspace);
-
+  constructor(
+    private readonly workspace: Blockly.WorkspaceSvg,
+    config: ConnectionConfig = {}
+  ) {
     this.config = {
       enableAutoConnection: config.enableAutoConnection ?? true,
       connectionRadius: config.connectionRadius ?? 200,
@@ -46,18 +46,21 @@ export class SmartBlockPositioner extends BlockPositioner {
     ];
   }
 
-  positionAndConnect(
-    block: Blockly.BlockSvg,
+  /**
+   * Attempt to connect a block using smart connection strategies.
+   */
+  attemptConnection(
+    newBlock: Blockly.BlockSvg,
     clientX?: number,
     clientY?: number,
     context?: ConnectionContext
   ): ConnectionResult | null {
-    this.positionBlock(block, clientX, clientY);
     if (!this.config.enableAutoConnection) {
       return null;
     }
-    const connectionContext = this.buildConnectionContext(block, clientX, clientY, context);
-    return this.attemptConnection(block, connectionContext);
+
+    const connectionContext = this.buildConnectionContext(newBlock, clientX, clientY, context);
+    return this.findAndMakeConnection(newBlock, connectionContext);
   }
 
   /**
@@ -91,7 +94,7 @@ export class SmartBlockPositioner extends BlockPositioner {
     return context;
   }
 
-  private attemptConnection(newBlock: Blockly.BlockSvg, context: ConnectionContext): ConnectionResult | null {
+  private findAndMakeConnection(newBlock: Blockly.BlockSvg, context: ConnectionContext): ConnectionResult | null {
     // Get potential target blocks in priority order
     const targetBlocks = this.getPriorizedTargetBlocks(context);
 
@@ -181,14 +184,10 @@ export class SmartBlockPositioner extends BlockPositioner {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  positionBlock(block: Blockly.BlockSvg, clientX?: number, clientY?: number): void {
-    super.positionBlock(block, clientX, clientY);
-    if (this.config.enableAutoConnection) {
-      this.attemptConnection(block, this.buildConnectionContext(block, clientX, clientY));
-    }
-  }
-
-  setConfig(newConfig: Partial<SmartPositioningConfig>): void {
+  /**
+   * Update configuration.
+   */
+  setConfig(newConfig: Partial<ConnectionConfig>): void {
     this.config = {
       ...this.config,
       ...newConfig
@@ -199,12 +198,10 @@ export class SmartBlockPositioner extends BlockPositioner {
     }
   }
 
-  getConfig(): SmartPositioningConfig {
+  /**
+   * Get current configuration.
+   */
+  getConfig(): ConnectionConfig {
     return {...this.config};
-  }
-
-  connectBlock(block: Blockly.BlockSvg, context?: ConnectionContext): ConnectionResult | null {
-    const connectionContext = this.buildConnectionContext(block, undefined, undefined, context);
-    return this.attemptConnection(block, connectionContext);
   }
 }

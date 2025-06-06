@@ -6,7 +6,7 @@ import {SmartOptionGenerator} from './autocomplete/smart-option-generator';
 import {DefaultWorkspaceStateTracker} from './autocomplete/workspace-state-tracker';
 import {BasicScopeAnalyzer} from './autocomplete/scope-analyzer';
 import {DynamicFloatingInputController} from './autocomplete/dynamic-controller';
-import {SmartPositioningConfig} from './block-actions/smart-block-positioner';
+import {ConnectionConfig} from './block-actions/connection-manager';
 import {PatternConfig} from './input-patterns/pattern-types';
 
 export interface InstallOptions {
@@ -15,7 +15,7 @@ export interface InstallOptions {
     optionGenerator?: OptionGenerator;
     enableDynamicOptions?: boolean;
     enableSmartConnection?: boolean;
-    smartConfig?: SmartPositioningConfig;
+    connectionConfig?: ConnectionConfig;
     enablePatternRecognition?: boolean;
     patternConfig?: PatternConfig;
 }
@@ -63,7 +63,7 @@ export class TypeBlocking {
             options: [], // Will be generated dynamically
             matcher: options.matcher,
             enableSmartConnection: options.enableSmartConnection,
-            smartConfig: options.smartConfig,
+            connectionConfig: options.connectionConfig,
             enablePatternRecognition: options.enablePatternRecognition,
             patternConfig: options.patternConfig
         });
@@ -80,7 +80,7 @@ export class TypeBlocking {
             options: allTypeblockTexts,
             matcher: options.matcher,
             enableSmartConnection: options.enableSmartConnection,
-            smartConfig: options.smartConfig,
+            connectionConfig: options.connectionConfig,
             enablePatternRecognition: options.enablePatternRecognition,
             patternConfig: options.patternConfig
         });
@@ -127,7 +127,7 @@ export class TypeBlocking {
         console.info(`Typeblocking disposed from workspace ${id}`);
     }
 
-    installFloatingInput({options = [], matcher, enableSmartConnection, smartConfig, enablePatternRecognition, patternConfig}: InstallOptions): void {
+    installFloatingInput({options = [], matcher, enableSmartConnection, connectionConfig, enablePatternRecognition, patternConfig}: InstallOptions): void {
         this.controller = new DynamicFloatingInputController(
             this.workspace,
             {
@@ -136,7 +136,7 @@ export class TypeBlocking {
                 optionGenerator: this.optionGenerator,
                 stateTracker: this.stateTracker,
                 enableSmartConnection,
-                smartConfig,
+                connectionConfig,
                 enablePatternRecognition,
                 patternConfig
             }

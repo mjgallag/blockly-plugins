@@ -4,7 +4,7 @@ import {substringMatcher} from './matcher';
 import {Renderer} from './renderer';
 import {BlockFactory} from '../block-actions/block-factory';
 import {BlockPositioner} from '../block-actions/block-positioner';
-import {SmartBlockPositioner, SmartPositioningConfig} from '../block-actions/smart-block-positioner';
+import {ConnectionManager, ConnectionConfig} from '../block-actions/connection-manager';
 import {PatternConfig} from '../input-patterns/pattern-types';
 import {InputPatternManager} from '../input-patterns/pattern-manager';
 import {getBuiltinPatterns} from '../input-patterns/builtin-patterns';
@@ -18,6 +18,7 @@ export class FloatingInputController {
   private readonly options: Option[];
   private readonly blockFactory: BlockFactory;
   private readonly blockPositioner: BlockPositioner;
+  private readonly connectionManager?: ConnectionManager;
   private readonly patternManager?: InputPatternManager;
   private readonly optionGenerator?: OptionGenerator;
 
@@ -27,7 +28,7 @@ export class FloatingInputController {
       options: Option[]; 
       matcher?: Matcher; 
       enableSmartConnection?: boolean; 
-      smartConfig?: SmartPositioningConfig;
+      connectionConfig?: ConnectionConfig;
       enablePatternRecognition?: boolean;
       patternConfig?: PatternConfig;
       optionGenerator?: OptionGenerator;
@@ -39,6 +40,7 @@ export class FloatingInputController {
     this.optionGenerator = opts.optionGenerator;
 
     this.blockFactory = new BlockFactory(ws);
+    this.blockPositioner = new BlockPositioner(ws);
 
     if (opts.enablePatternRecognition !== false) { // Default to true
       this.patternManager = new InputPatternManager(opts.patternConfig);
@@ -46,12 +48,10 @@ export class FloatingInputController {
     }
 
     if (opts.enableSmartConnection !== false) { // Default to true
-      this.blockPositioner = new SmartBlockPositioner(ws, opts.smartConfig);
-    } else {
-      this.blockPositioner = new BlockPositioner(ws);
+      this.connectionManager = new ConnectionManager(ws, opts.connectionConfig);
     }
 
-    const pointer = ws.getInjectionDiv().addEventListener('pointermove', this.pointerMoveListener);
+    ws.getInjectionDiv().addEventListener('pointermove', this.pointerMoveListener);
   }
 
   dispose(): void {
@@ -134,7 +134,13 @@ export class FloatingInputController {
     }
 
     if (newBlock) {
+      // Position the block first
       this.blockPositioner.positionBlock(newBlock, this.lastX, this.lastY);
+
+      // Then attempt smart connection if enabled
+      if (this.connectionManager) {
+        this.connectionManager.attemptConnection(newBlock, this.lastX, this.lastY);
+      }
     } else {
       console.warn('TypeBlocking: Failed to create block for value:', value);
     }

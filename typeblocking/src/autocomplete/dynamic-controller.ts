@@ -2,7 +2,7 @@ import * as Blockly from 'blockly/core';
 import {Option, Matcher, OptionGenerator, WorkspaceStateTracker} from '../types';
 import {FloatingInputController} from './controller';
 import {substringMatcher} from './matcher';
-import {SmartPositioningConfig} from '../block-actions/smart-block-positioner';
+import {ConnectionConfig} from '../block-actions/connection-manager';
 import {PatternConfig} from '../input-patterns/pattern-types';
 
 interface DynamicControllerOptions {
@@ -11,7 +11,7 @@ interface DynamicControllerOptions {
   optionGenerator?: OptionGenerator;
   stateTracker?: WorkspaceStateTracker;
   enableSmartConnection?: boolean;
-  smartConfig?: SmartPositioningConfig;
+  connectionConfig?: ConnectionConfig;
   enablePatternRecognition?: boolean;
   patternConfig?: PatternConfig;
 }
@@ -34,7 +34,7 @@ export class DynamicFloatingInputController extends FloatingInputController {
       options: opts.options,
       matcher: opts.matcher ?? substringMatcher,
       enableSmartConnection: opts.enableSmartConnection,
-      smartConfig: opts.smartConfig,
+      connectionConfig: opts.connectionConfig,
       enablePatternRecognition: opts.enablePatternRecognition,
       patternConfig: opts.patternConfig,
       optionGenerator: opts.optionGenerator // Pass option generator to parent
