@@ -4,7 +4,7 @@ import * as Blockly from 'blockly/core';
  * Utility class for positioning blocks in the workspace.
  */
 export class BlockPositioner {
-  constructor(private readonly workspace: Blockly.WorkspaceSvg) {}
+  constructor(protected readonly workspace: Blockly.WorkspaceSvg) {}
 
   /**
    * Positions a block at the specified coordinates or cursor position.

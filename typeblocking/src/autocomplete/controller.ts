@@ -4,6 +4,7 @@ import {substringMatcher} from './matcher';
 import {Renderer} from './renderer';
 import {BlockFactory} from '../block-actions/block-factory';
 import {BlockPositioner} from '../block-actions/block-positioner';
+import {SmartBlockPositioner, SmartPositioningConfig} from '../block-actions/smart-block-positioner';
 
 /** Orchestrates Blockly, Renderer, and matching logic. */
 export class FloatingInputController {
@@ -16,13 +17,18 @@ export class FloatingInputController {
 
   constructor(
     private readonly ws: Blockly.WorkspaceSvg,
-    opts: {options: Option[]; matcher?: Matcher},
+    opts: {options: Option[]; matcher?: Matcher; enableSmartConnection?: boolean; smartConfig?: SmartPositioningConfig},
   ) {
     this.ws = ws;
     this.options = opts.options;
     this.matcher = opts.matcher ?? substringMatcher;
     this.blockFactory = new BlockFactory(ws);
-    this.blockPositioner = new BlockPositioner(ws);
+
+    if (opts.enableSmartConnection !== false) { // Default to true
+      this.blockPositioner = new SmartBlockPositioner(ws, opts.smartConfig);
+    } else {
+      this.blockPositioner = new BlockPositioner(ws);
+    }
 
     const pointer = ws.getInjectionDiv().addEventListener('pointermove', this.pointerMoveListener);
   }

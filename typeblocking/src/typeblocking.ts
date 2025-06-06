@@ -5,12 +5,15 @@ import {WorkspaceOptionGenerator} from './autocomplete/option-generator';
 import {DefaultWorkspaceStateTracker} from './autocomplete/workspace-state-tracker';
 import {BasicScopeAnalyzer} from './autocomplete/scope-analyzer';
 import {DynamicFloatingInputController} from './autocomplete/dynamic-controller';
+import {SmartPositioningConfig} from './block-actions/smart-block-positioner';
 
 export interface InstallOptions {
     options?: Option[];
     matcher?: Matcher;
     optionGenerator?: OptionGenerator;
     enableDynamicOptions?: boolean;
+    enableSmartConnection?: boolean;
+    smartConfig?: SmartPositioningConfig;
 }
 /**
  * Create blocks by typing instead of navigating through the toolbox.
@@ -50,7 +53,9 @@ export class TypeBlocking {
 
         this.installFloatingInput({
             options: [], // Will be generated dynamically
-            matcher: options.matcher
+            matcher: options.matcher,
+            enableSmartConnection: options.enableSmartConnection,
+            smartConfig: options.smartConfig
         });
     }
 
@@ -63,7 +68,9 @@ export class TypeBlocking {
 
         this.installFloatingInput({
             options: allTypeblockTexts,
-            matcher: options.matcher
+            matcher: options.matcher,
+            enableSmartConnection: options.enableSmartConnection,
+            smartConfig: options.smartConfig
         });
     }
 
@@ -108,14 +115,16 @@ export class TypeBlocking {
         console.info(`Typeblocking disposed from workspace ${id}`);
     }
 
-    installFloatingInput({options = [], matcher}: InstallOptions): void {
+    installFloatingInput({options = [], matcher, enableSmartConnection, smartConfig}: InstallOptions): void {
         this.controller = new DynamicFloatingInputController(
             this.workspace,
             {
                 options,
                 matcher,
                 optionGenerator: this.optionGenerator,
-                stateTracker: this.stateTracker
+                stateTracker: this.stateTracker,
+                enableSmartConnection,
+                smartConfig
             }
         );
 
