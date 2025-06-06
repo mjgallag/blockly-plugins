@@ -3,10 +3,11 @@ import {Option, Matcher, OptionGenerator} from '../types';
 import {substringMatcher} from './matcher';
 import {Renderer} from './renderer';
 import {BlockFactory} from '../block-actions/block-factory';
-import {SmartBlockFactory} from '../block-actions/smart-block-factory';
 import {BlockPositioner} from '../block-actions/block-positioner';
 import {SmartBlockPositioner, SmartPositioningConfig} from '../block-actions/smart-block-positioner';
 import {PatternConfig} from '../input-patterns/pattern-types';
+import {InputPatternManager} from '../input-patterns/pattern-manager';
+import {getBuiltinPatterns} from '../input-patterns/builtin-patterns';
 import {SmartOptionGenerator} from './smart-option-generator';
 
 /** Orchestrates Blockly, Renderer, and matching logic. */
@@ -17,6 +18,7 @@ export class FloatingInputController {
   private readonly options: Option[];
   private readonly blockFactory: BlockFactory;
   private readonly blockPositioner: BlockPositioner;
+  private readonly patternManager?: InputPatternManager;
   private readonly optionGenerator?: OptionGenerator;
 
   constructor(
@@ -36,10 +38,11 @@ export class FloatingInputController {
     this.matcher = opts.matcher ?? substringMatcher;
     this.optionGenerator = opts.optionGenerator;
 
+    this.blockFactory = new BlockFactory(ws);
+
     if (opts.enablePatternRecognition !== false) { // Default to true
-      this.blockFactory = new SmartBlockFactory(ws, opts.patternConfig);
-    } else {
-      this.blockFactory = new BlockFactory(ws);
+      this.patternManager = new InputPatternManager(opts.patternConfig);
+      this.patternManager.registerBuiltinPatterns(getBuiltinPatterns());
     }
 
     if (opts.enableSmartConnection !== false) { // Default to true
@@ -105,11 +108,32 @@ export class FloatingInputController {
 
   private choose(value: string): void {
     console.debug('TypeBlocking: Choosing value:', value);
-    console.debug('TypeBlocking: Block factory type:', this.blockFactory.constructor.name);
     
-    const newBlock = this.blockFactory.createBlock(value);
+    let newBlock: Blockly.BlockSvg | undefined;
+
+    // First, try pattern recognition if enabled
+    if (this.patternManager) {
+      console.debug('TypeBlocking: Trying pattern recognition for:', value);
+      const instruction = this.patternManager.getBlockInstructions(value);
+      if (instruction) {
+        console.debug('TypeBlocking: Found pattern instruction:', instruction);
+        newBlock = this.blockFactory.createBlockFromInstruction(instruction);
+        if (newBlock) {
+          console.debug('TypeBlocking: Created block using pattern recognition:', newBlock.type);
+        }
+      }
+    }
+
+    // Fall back to regular block creation if pattern recognition didn't work
+    if (!newBlock) {
+      console.debug('TypeBlocking: Falling back to regular block creation');
+      newBlock = this.blockFactory.createBlock(value);
+      if (newBlock) {
+        console.debug('TypeBlocking: Created block using regular method:', newBlock.type);
+      }
+    }
+
     if (newBlock) {
-      console.debug('TypeBlocking: Successfully created block:', newBlock.type);
       this.blockPositioner.positionBlock(newBlock, this.lastX, this.lastY);
     } else {
       console.warn('TypeBlocking: Failed to create block for value:', value);
