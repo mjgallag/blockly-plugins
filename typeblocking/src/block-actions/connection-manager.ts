@@ -96,7 +96,7 @@ export class ConnectionManager {
 
   private findAndMakeConnection(newBlock: Blockly.BlockSvg, context: ConnectionContext): ConnectionResult | null {
     // Get potential target blocks in priority order
-    const targetBlocks = this.getPriorizedTargetBlocks(context);
+    const targetBlocks = this.getPriorizedTargetBlocks(newBlock, context);
 
     for (const targetBlock of targetBlocks) {
       for (const strategy of this.connectionStrategies) {
@@ -117,7 +117,7 @@ export class ConnectionManager {
     return null;
   }
 
-  private getPriorizedTargetBlocks(context: ConnectionContext): Blockly.BlockSvg[] {
+  private getPriorizedTargetBlocks(newBlock: Blockly.BlockSvg, context: ConnectionContext): Blockly.BlockSvg[] {
     const targets: Blockly.BlockSvg[] = [];
 
     // Priority 1: Selected block
@@ -125,13 +125,40 @@ export class ConnectionManager {
       targets.push(context.selectedBlock);
     }
 
-    // Priority 2: Nearby blocks (sorted by distance)
+    // Priority 2: Nearby blocks with smart prioritization
     if (context.nearbyBlocks) {
       // Filter out selected block to avoid duplicates
       const nearbyUnselected = context.nearbyBlocks.filter(
         block => block !== context.selectedBlock
       );
-      targets.push(...nearbyUnselected);
+
+      // Smart prioritization: prefer blocks with fewer existing connections
+      const smartSorted = nearbyUnselected.sort((a, b) => {
+        const valueInputStrategy = this.connectionStrategies.find(s => s.name === 'ValueInput');
+        if (!valueInputStrategy) return 0;
+
+        const aCanConnect = valueInputStrategy.canConnect(newBlock, a, context);
+        const bCanConnect = valueInputStrategy.canConnect(newBlock, b, context);
+
+        // First priority: blocks that can actually connect
+        if (aCanConnect && !bCanConnect) return -1;
+        if (!aCanConnect && bCanConnect) return 1;
+
+        // If both can connect, prefer blocks with fewer existing connections (more "empty")
+        if (aCanConnect && bCanConnect) {
+          const aConnectedInputs = this.countConnectedInputs(a);
+          const bConnectedInputs = this.countConnectedInputs(b);
+
+          if (aConnectedInputs !== bConnectedInputs) {
+            return aConnectedInputs - bConnectedInputs; // Fewer connections first
+          }
+        }
+
+        // Fallback: maintain distance-based order
+        return 0;
+      });
+
+      targets.push(...smartSorted);
     }
 
     return [...new Set(targets)];
@@ -163,9 +190,11 @@ export class ConnectionManager {
     // Sort by distance and limit results
     nearbyBlocks.sort((a, b) => a.distance - b.distance);
 
-    return nearbyBlocks
+    const result = nearbyBlocks
       .slice(0, this.config.maxNearbyBlocks)
       .map(item => item.block);
+
+    return result;
   }
 
   private clientToWorkspaceCoordinates(clientX: number, clientY: number): {x: number, y: number} {
@@ -182,6 +211,37 @@ export class ConnectionManager {
     const dx = point1.x - point2.x;
     const dy = point1.y - point2.y;
     return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  private getBlockDistance(block: Blockly.BlockSvg, context: ConnectionContext): number {
+    // Get the search position used for nearby block detection
+    const blockPosition = block.getRelativeToSurfaceXY();
+    const searchPosition = context.cursorPosition ?
+      this.clientToWorkspaceCoordinates(context.cursorPosition.x, context.cursorPosition.y) :
+      blockPosition;
+
+    return this.calculateDistance(searchPosition, blockPosition);
+  }
+
+  private hasAvailableInputConnections(block: Blockly.BlockSvg): boolean {
+    // Check if the block has any available (unconnected) input connections
+    for (const input of block.inputList) {
+      if (input.connection && !input.connection.isConnected()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private countConnectedInputs(block: Blockly.BlockSvg): number {
+    // Count how many input connections are already connected
+    let count = 0;
+    for (const input of block.inputList) {
+      if (input.connection && input.connection.isConnected()) {
+        count++;
+      }
+    }
+    return count;
   }
 
   /**

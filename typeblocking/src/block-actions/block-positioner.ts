@@ -44,6 +44,5 @@ export class BlockPositioner {
     }
 
     block.moveBy(x, y);
-    block.select();
   }
 }
