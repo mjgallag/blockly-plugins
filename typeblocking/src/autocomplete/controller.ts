@@ -2,6 +2,8 @@ import * as Blockly from 'blockly/core';
 import {Option, Matcher} from '../types';
 import {substringMatcher} from './matcher';
 import {Renderer} from './renderer';
+import {BlockFactory} from './block-factory';
+import {BlockPositioner} from './block-positioner';
 
 /** Orchestrates Blockly, Renderer, and matching logic. */
 export class FloatingInputController {
@@ -9,6 +11,8 @@ export class FloatingInputController {
   private lastY = 0;
   private readonly matcher: Matcher;
   private readonly options: Option[];
+  private readonly blockFactory: BlockFactory;
+  private readonly blockPositioner: BlockPositioner;
 
   constructor(
     private readonly ws: Blockly.WorkspaceSvg,
@@ -17,6 +21,8 @@ export class FloatingInputController {
     this.ws = ws;
     this.options = opts.options;
     this.matcher = opts.matcher ?? substringMatcher;
+    this.blockFactory = new BlockFactory(ws);
+    this.blockPositioner = new BlockPositioner(ws);
 
     const pointer = ws.getInjectionDiv().addEventListener('pointermove', this.pointerMoveListener);
   }
@@ -61,49 +67,14 @@ export class FloatingInputController {
   }
 
   private choose(value: string): void {
-    const newBlock = this.renderBlock(value);
+    const newBlock = this.blockFactory.createBlock(value);
     if (newBlock) {
-      this.moveBlock(newBlock);
+      this.blockPositioner.positionBlock(newBlock, this.lastX, this.lastY);
     }
 
     Blockly.WidgetDiv.hide();
     // TODO: does this interfere with the new block's focus?
     this.ws.getInjectionDiv().focus();
-  }
-
-  private renderBlock(value: string): Blockly.BlockSvg | undefined {
-    let blockType = value;
-    if (!Blockly.Blocks[blockType]) {
-      for (const t in Blockly.Blocks) {
-        if (Blockly.Blocks[t].typeblock === value) {
-          blockType = t;
-          break;
-        }
-      }
-    }
-    if (!Blockly.Blocks[blockType]) {
-      console.warn(`No block registered for “${value}”`);
-      return;
-    }
-
-    const block = this.ws.newBlock(blockType);
-    block.initSvg();
-    block.render();
-    return block;
-  }
-
-  private moveBlock(block: Blockly.BlockSvg): void {
-    const metrics = this.ws.getMetrics(); // viewport & scroll
-    const divRect = this.ws.getInjectionDiv().getBoundingClientRect();
-
-    const clientX = this.lastX || divRect.left + divRect.width / 2;
-    const clientY = this.lastY || divRect.top + divRect.height / 2;
-
-    const x = (clientX - divRect.left) / this.ws.scale + metrics.viewLeft;
-    const y = (clientY - divRect.top) / this.ws.scale + metrics.viewTop;
-
-    block.moveBy(x, y);
-    block.select(); // give it focus
   }
 
   private positionWidgetDiv(): void {
