@@ -39,7 +39,14 @@ export class Renderer {
       li.textContent = s;
       this.list.appendChild(li);
     });
-    this.highlighted = -1;
+
+    // Auto-select the first option if suggestions are available
+    if (suggestions.length > 0) {
+      this.updateHighlight(0);
+    } else {
+      this.highlighted = -1;
+    }
+
     this.list.hidden = suggestions.length === 0;
   }
 
