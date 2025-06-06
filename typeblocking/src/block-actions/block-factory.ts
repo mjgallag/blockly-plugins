@@ -1,4 +1,5 @@
 import * as Blockly from 'blockly/core';
+import {BlockCreationInstruction} from '../input-patterns/pattern-types';
 
 /**
  * Utility class for creating blocks from type identifiers.
@@ -37,6 +38,60 @@ export class BlockFactory {
     block.initSvg();
     block.render();
     return block;
+  }
+
+  /**
+   * Creates a block from a BlockCreationInstruction. This is for more complex block creation with fields and children.
+   * @param instruction - The instruction describing how to create the block
+   * @returns The created block or undefined if creation failed
+   */
+  createBlockFromInstruction(instruction: BlockCreationInstruction): Blockly.BlockSvg | undefined {
+    try {
+      // Create the main block
+      const block = this.workspace.newBlock(instruction.blockType);
+
+      // Set field values
+      if (instruction.fieldValues) {
+        for (const [fieldName, value] of Object.entries(instruction.fieldValues)) {
+          const field = block.getField(fieldName);
+          if (field) {
+            // Special handling for variable fields
+            if (fieldName === 'VAR' && (block.type === 'variables_set' || block.type === 'variables_get')) {
+              let variable = this.workspace.getVariable(value);
+              if (!variable) {
+                // Create the variable if it doesn't exist
+                variable = this.workspace.createVariable(value);
+              }
+              field.setValue(variable.getId());
+            } else {
+              field.setValue(value);
+            }
+          }
+        }
+      }
+
+      // Initialize the block
+      block.initSvg();
+      block.render();
+
+      // Create and connect child blocks
+      if (instruction.children) {
+        for (const child of instruction.children) {
+          const childBlock = this.createBlockFromInstruction(child.instruction);
+          if (childBlock) {
+            const input = block.getInput(child.input);
+            if (input && childBlock.outputConnection) {
+              childBlock.outputConnection.connect(input.connection!);
+            }
+          }
+        }
+      }
+
+      return block;
+    } catch (error) {
+      console.warn(`Failed to create block from instruction:`, error);
+      return undefined;
+    }
   }
 
   /**

@@ -1,5 +1,5 @@
 import * as Blockly from 'blockly/core';
-import {InputPattern, PatternDetectionResult, PatternConfig, InputSuggestion} from './pattern-types';
+import {InputPattern, PatternDetectionResult, PatternConfig, InputSuggestion, BlockCreationInstruction} from './pattern-types';
 
 /**
  * Manages input pattern recognition and block creation.
@@ -142,29 +142,30 @@ export class InputPatternManager {
   }
 
   /**
-   * Create a block from input using pattern recognition.
+   * Get block creation instructions from input using pattern recognition.
    */
-  createBlockFromPattern(input: string, workspace: Blockly.WorkspaceSvg): Blockly.BlockSvg | null {
+  getBlockInstructions(input: string): BlockCreationInstruction | null {
     const result = this.detectPattern(input);
     if (!result) {
       return null;
     }
 
     try {
-      const block = result.pattern.createBlock(result.match, workspace);
-      if (block) {
-        console.debug(`Created block using pattern: ${result.pattern.name}`, {
+      const instruction = result.pattern.parseInput(result.match);
+      if (instruction) {
+        console.debug(`Generated block instruction using pattern: ${result.pattern.name}`, {
           input,
           confidence: result.confidence,
-          blockType: block.type
+          blockType: instruction.blockType
         });
       }
-      return block;
+      return instruction;
     } catch (error) {
-      console.error(`Failed to create block using pattern ${result.pattern.name}:`, error);
+      console.error(`Failed to generate instruction using pattern ${result.pattern.name}:`, error);
       return null;
     }
   }
+
 
   /**
    * Get autocomplete suggestions for the given input.
@@ -211,7 +212,7 @@ export class InputPatternManager {
     
     // Try adding some common completions to see if pattern would match
     const testCompletions = ['', '0', '1', 'true', 'false', '"', ')'];
-    
+
     for (const completion of testCompletions) {
       const testInput = trimmedInput + completion;
       if (pattern.pattern.test(testInput)) {

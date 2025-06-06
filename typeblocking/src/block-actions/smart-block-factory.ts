@@ -44,12 +44,16 @@ export class SmartBlockFactory extends BlockFactory {
   private tryPatternCreation(value: string): Blockly.BlockSvg | undefined {
     try {
       console.debug('SmartBlockFactory: Trying pattern creation for:', value);
-      const detectionResult = this.patternManager.detectPattern(value);
-      console.debug('SmartBlockFactory: Pattern detection result:', detectionResult);
-      
-      const block = this.patternManager.createBlockFromPattern(value, this.workspace);
-      console.debug('SmartBlockFactory: Pattern creation result:', block ? block.type : 'null');
-      return block || undefined;
+      const instruction = this.patternManager.getBlockInstructions(value);
+      console.debug('SmartBlockFactory: Pattern instruction result:', instruction);
+
+      if (instruction) {
+        const block = this.createBlockFromInstruction(instruction);
+        console.debug('SmartBlockFactory: Pattern creation result:', block ? block.type : 'null');
+        return block;
+      }
+
+      return undefined;
     } catch (error) {
       console.debug('SmartBlockFactory: Pattern creation failed:', error);
       return undefined;

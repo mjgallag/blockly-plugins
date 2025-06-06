@@ -1,5 +1,4 @@
-import * as Blockly from 'blockly/core';
-import {InputPattern} from './pattern-types';
+import {InputPattern, BlockCreationInstruction} from './pattern-types';
 
 /**
  * Base class for built-in patterns with common utilities.
@@ -10,17 +9,7 @@ abstract class BasePattern implements InputPattern {
   abstract readonly priority: number;
   abstract readonly description: string;
 
-  abstract createBlock(match: RegExpMatchArray, workspace: Blockly.WorkspaceSvg): Blockly.BlockSvg | null;
-
-  /**
-   * Helper method to create and initialize a block.
-   */
-  protected createAndInitializeBlock(workspace: Blockly.WorkspaceSvg, blockType: string): Blockly.BlockSvg {
-    const block = workspace.newBlock(blockType);
-    block.initSvg();
-    block.render();
-    return block;
-  }
+  abstract parseInput(match: RegExpMatchArray): BlockCreationInstruction | null;
 
   /**
    * Default implementation for completeness check.
@@ -40,21 +29,21 @@ export class NumberPattern extends BasePattern {
   readonly priority = 100;
   readonly description = 'Create number block from numeric input';
 
-  createBlock(match: RegExpMatchArray, workspace: Blockly.WorkspaceSvg): Blockly.BlockSvg | null {
+  parseInput(match: RegExpMatchArray): BlockCreationInstruction | null {
     const value = match[0];
     const numericValue = parseFloat(value);
 
+    // Validate the number
     if (isNaN(numericValue)) {
       return null;
     }
 
-    const block = this.createAndInitializeBlock(workspace, 'math_number');
-    const field = block.getField('NUM');
-    if (field) {
-      field.setValue(value);
-    }
-
-    return block;
+    return {
+      blockType: 'math_number',
+      fieldValues: {
+        'NUM': value
+      }
+    };
   }
 
   generateSuggestions(match: RegExpMatchArray): string[] {
@@ -86,16 +75,15 @@ export class TextPattern extends BasePattern {
   readonly priority = 95;
   readonly description = 'Create text block from quoted string';
 
-  createBlock(match: RegExpMatchArray, workspace: Blockly.WorkspaceSvg): Blockly.BlockSvg | null {
+  parseInput(match: RegExpMatchArray): BlockCreationInstruction | null {
     const textValue = match[1]; // Extract content without quotes
 
-    const block = this.createAndInitializeBlock(workspace, 'text');
-    const field = block.getField('TEXT');
-    if (field) {
-      field.setValue(textValue);
-    }
-
-    return block;
+    return {
+      blockType: 'text',
+      fieldValues: {
+        'TEXT': textValue
+      }
+    };
   }
 
   generateSuggestions(match: RegExpMatchArray): string[] {
@@ -103,16 +91,9 @@ export class TextPattern extends BasePattern {
     return [
       `"${content}"`,
       `'${content}'`,
-      `"${content.toUpperCase()}"`,
-      `"${content.toLowerCase()}"`
+      '"hello world"',
+      '"example text"'
     ];
-  }
-
-  isComplete(input: string): boolean {
-    const trimmed = input.trim();
-    // Check if it starts and ends with matching quotes
-    return (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-           (trimmed.startsWith("'") && trimmed.endsWith("'"));
   }
 }
 
@@ -126,29 +107,26 @@ export class BooleanPattern extends BasePattern {
   readonly priority = 90;
   readonly description = 'Create boolean block from true/false';
 
-  createBlock(match: RegExpMatchArray, workspace: Blockly.WorkspaceSvg): Blockly.BlockSvg | null {
+  parseInput(match: RegExpMatchArray): BlockCreationInstruction | null {
     const value = match[1].toLowerCase();
     const isTrue = value === 'true';
 
-    const blockType = isTrue ? 'logic_boolean' : 'logic_boolean';
-    const block = this.createAndInitializeBlock(workspace, blockType);
-
-    const field = block.getField('BOOL');
-    if (field) {
-      field.setValue(isTrue ? 'TRUE' : 'FALSE');
-    }
-
-    return block;
+    return {
+      blockType: 'logic_boolean',
+      fieldValues: {
+        'BOOL': isTrue ? 'TRUE' : 'FALSE'
+      }
+    };
   }
 
-  generateSuggestions(match: RegExpMatchArray): string[] {
+  generateSuggestions(): string[] {
     return ['true', 'false'];
   }
 }
 
 /**
  * Pattern for recognizing simple math expressions.
- * Matches basic arithmetic: number operator number.
+ * Matches "number operator number" format.
  */
 export class MathExpressionPattern extends BasePattern {
   readonly name = 'math_expression';
@@ -156,49 +134,42 @@ export class MathExpressionPattern extends BasePattern {
   readonly priority = 80;
   readonly description = 'Create arithmetic block from math expression';
 
-  private operatorMap: Record<string, string> = {
+  private readonly operatorMap: Record<string, string> = {
     '+': 'ADD',
     '-': 'MINUS',
     '*': 'MULTIPLY',
     '/': 'DIVIDE'
   };
 
-  createBlock(match: RegExpMatchArray, workspace: Blockly.WorkspaceSvg): Blockly.BlockSvg | null {
+  parseInput(match: RegExpMatchArray): BlockCreationInstruction | null {
     const [, leftValue, operator, rightValue] = match;
     
     if (!this.operatorMap[operator]) {
       return null;
     }
 
-    const block = this.createAndInitializeBlock(workspace, 'math_arithmetic');
-
-    const opField = block.getField('OP');
-    if (opField) {
-      opField.setValue(this.operatorMap[operator]);
-    }
-
-    const leftBlock = workspace.newBlock('math_number');
-    leftBlock.getField('NUM')?.setValue(leftValue);
-    leftBlock.initSvg();
-    leftBlock.render();
-
-    const rightBlock = workspace.newBlock('math_number');
-    rightBlock.getField('NUM')?.setValue(rightValue);
-    rightBlock.initSvg();
-    rightBlock.render();
-
-    const aInput = block.getInput('A');
-    const bInput = block.getInput('B');
-    
-    if (aInput && leftBlock.outputConnection) {
-      leftBlock.outputConnection.connect(aInput.connection!);
-    }
-
-    if (bInput && rightBlock.outputConnection) {
-      rightBlock.outputConnection.connect(bInput.connection!);
-    }
-
-    return block;
+    return {
+      blockType: 'math_arithmetic',
+      fieldValues: {
+        'OP': this.operatorMap[operator]
+      },
+      children: [
+        {
+          input: 'A',
+          instruction: {
+            blockType: 'math_number',
+            fieldValues: { 'NUM': leftValue }
+          }
+        },
+        {
+          input: 'B',
+          instruction: {
+            blockType: 'math_number',
+            fieldValues: { 'NUM': rightValue }
+          }
+        }
+      ]
+    };
   }
 
   generateSuggestions(match: RegExpMatchArray): string[] {
@@ -236,75 +207,64 @@ export class VariableAssignmentPattern extends BasePattern {
   readonly priority = 85;
   readonly description = 'Create variable assignment from "set var to value" syntax';
 
-  createBlock(match: RegExpMatchArray, workspace: Blockly.WorkspaceSvg): Blockly.BlockSvg | null {
+  parseInput(match: RegExpMatchArray): BlockCreationInstruction | null {
     const [, varName, valueText] = match;
 
-    const setBlock = this.createAndInitializeBlock(workspace, 'variables_set');
-
-    let variable = workspace.getVariable(varName);
-    if (!variable) {
-      variable = workspace.createVariable(varName);
+    const valueInstruction = this.parseValueInstruction(valueText.trim());
+    if (!valueInstruction) {
+      return null;
     }
 
-    const varField = setBlock.getField('VAR');
-    if (varField && variable) {
-      varField.setValue(variable.getId());
-    }
-
-    const valueBlock = this.createValueBlock(valueText.trim(), workspace);
-    if (valueBlock) {
-      const valueInput = setBlock.getInput('VALUE');
-      if (valueInput && valueBlock.outputConnection) {
-        valueBlock.outputConnection.connect(valueInput.connection!);
-      }
-    }
-
-    return setBlock;
+    return {
+      blockType: 'variables_set',
+      fieldValues: {
+        'VAR': varName // Note: This will need special handling in BlockFactory for variable creation
+      },
+      children: [
+        {
+          input: 'VALUE',
+          instruction: valueInstruction
+        }
+      ]
+    };
   }
 
   /**
-   * Create a block for the assignment value.
+   * Parse the value part of an assignment into a block instruction.
    */
-  private createValueBlock(value: string, workspace: Blockly.WorkspaceSvg): Blockly.BlockSvg | null {
+  private parseValueInstruction(value: string): BlockCreationInstruction | null {
     // Try number pattern
     if (/^-?\d*\.?\d+$/.test(value)) {
-      const block = workspace.newBlock('math_number');
-      block.getField('NUM')?.setValue(value);
-      block.initSvg();
-      block.render();
-      return block;
+      return {
+        blockType: 'math_number',
+        fieldValues: { 'NUM': value }
+      };
     }
 
     // Try quoted text pattern
     const textMatch = value.match(/^["'](.*)["']$/);
     if (textMatch) {
-      const block = workspace.newBlock('text');
-      block.getField('TEXT')?.setValue(textMatch[1]);
-      block.initSvg();
-      block.render();
-      return block;
+      return {
+        blockType: 'text',
+        fieldValues: { 'TEXT': textMatch[1] }
+      };
     }
 
     // Try boolean pattern
     if (/^(true|false)$/i.test(value)) {
       const isTrue = value.toLowerCase() === 'true';
-      const block = workspace.newBlock('logic_boolean');
-      block.getField('BOOL')?.setValue(isTrue ? 'TRUE' : 'FALSE');
-      block.initSvg();
-      block.render();
-      return block;
+      return {
+        blockType: 'logic_boolean',
+        fieldValues: { 'BOOL': isTrue ? 'TRUE' : 'FALSE' }
+      };
     }
 
     // Try variable reference
     if (/^\w+$/.test(value)) {
-      const variable = workspace.getVariable(value);
-      if (variable) {
-        const block = workspace.newBlock('variables_get');
-        block.getField('VAR')?.setValue(variable.getId());
-        block.initSvg();
-        block.render();
-        return block;
-      }
+      return {
+        blockType: 'variables_get',
+        fieldValues: { 'VAR': value }
+      };
     }
 
     return null;
@@ -317,7 +277,8 @@ export class VariableAssignmentPattern extends BasePattern {
       `set ${varName} to 0`,
       `set ${varName} to "text"`,
       `set ${varName} to true`,
-      `set ${varName} to false`
+      'set myVar to 42',
+      'set count to 0'
     ];
   }
 }
@@ -331,6 +292,6 @@ export function getBuiltinPatterns(): InputPattern[] {
     new TextPattern(),
     new BooleanPattern(),
     new MathExpressionPattern(),
-    new VariableAssignmentPattern()
+    new VariableAssignmentPattern(),
   ];
 }

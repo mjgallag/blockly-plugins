@@ -1,7 +1,22 @@
-import * as Blockly from 'blockly/core';
+/**
+ * Block creation instruction returned by patterns.
+ */
+export interface BlockCreationInstruction {
+  /** The type of block to create */
+  blockType: string;
+
+  /** Field values to set on the block */
+  fieldValues?: Record<string, string>;
+
+  /** Child blocks to create and connect */
+  children?: Array<{
+    input: string;
+    instruction: BlockCreationInstruction;
+  }>;
+}
 
 /**
- * Interface for input pattern recognition and block creation.
+ * Interface for input pattern recognition and block creation instructions.
  */
 export interface InputPattern {
   /** Unique name for this pattern */
@@ -17,12 +32,11 @@ export interface InputPattern {
   readonly description: string;
   
   /**
-   * Create a block from the matched input.
+   * Parse input and return block creation instructions.
    * @param match - The regex match result
-   * @param workspace - The workspace to create the block in
-   * @returns The created block or null if creation failed
+   * @returns Block creation instruction or null if parsing failed
    */
-  createBlock(match: RegExpMatchArray, workspace: Blockly.WorkspaceSvg): Blockly.BlockSvg | null;
+  parseInput(match: RegExpMatchArray): BlockCreationInstruction | null;
   
   /**
    * Generate autocomplete suggestions based on partial input.
