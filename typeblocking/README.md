@@ -7,7 +7,9 @@ functionality into a standalone, reusable Blockly plugin.
 ## Features
 
 - **Dynamic Option Generation** - Automatically reflects workspace state (variables, procedures, events)
-- **Automatic Block Creation** - Handles variables, procedures, and built-in blocks with proper configuration
+- **Smart Pattern Recognition** - Creates blocks from natural input like "42", "true", "2 + 3", "set x to 5"
+- **Contextual Block Connections** - Automatically connects newly created blocks with smart positioning
+- **Configurable Input Positioning** - Choose between mouse-following or fixed-position input
 - **Performance Optimized** - Lazy loading and intelligent caching for large workspaces
 - **Extensible Architecture** - Clean interfaces for customization
 - **TypeScript Support** - Full type definitions included
@@ -45,13 +47,111 @@ typeBlocking.init();
 // The plugin is now active! Users can:
 // - Press any key to open the autocomplete
 // - Type to filter options (e.g., "if", "set item to", "get myVar")
+// - Type natural input (e.g., "42", "true", "2 + 3", "set x to 5")
 // - Use arrow keys and Enter to select blocks
 // - Press Escape to cancel
+// - Blocks automatically connect when appropriate
 ```
 
 ## Advanced Configuration
 
-### Custom Options
+### Pattern Recognition
+
+Enable natural language block creation:
+
+```typescript
+typeBlocking.init({
+  enablePatternRecognition: true, // Default: true
+  patternConfig: {
+    enableNumberDetection: true,      // "42" → math_number block
+    enableTextDetection: true,        // "hello" → text block
+    enableBooleanDetection: true,     // "true" → logic_boolean block
+    enableMathExpressions: true,      // "2 + 3" → math_arithmetic block
+    enableVariableAssignments: true, // "set x to 5" → variable assignment
+    confidenceThreshold: 0.7,        // Pattern matching confidence
+    customPatterns: []                // Add your own patterns
+  }
+});
+```
+
+### Smart Block Connections
+
+Configure intelligent block positioning and connections:
+
+```typescript
+typeBlocking.init({
+  enableSmartConnection: true, // Default: true
+  connectionConfig: {
+    enableAutoConnection: true,     // Auto-connect compatible blocks
+    connectionRadius: 200,          // Search radius for nearby blocks (pixels)
+    maxNearbyBlocks: 10,           // Max blocks to consider for connection
+    strategies: [                   // Custom connection strategies
+      new ValueInputConnector(),
+      new StatementSequenceConnector()
+    ]
+  }
+});
+```
+
+### Input Positioning
+
+Control where the floating input appears:
+
+```typescript
+// Fixed position (great for accessibility)
+typeBlocking.init({
+  inputPositioning: {
+    mode: 'fixed',
+    fixedPosition: { x: 100, y: 50 } // Pixels from workspace top-left
+  }
+});
+
+// Mouse-following (default behavior)
+typeBlocking.init({
+  inputPositioning: {
+    mode: 'mouse' // Appears at last mouse position
+  }
+});
+```
+
+### Complete Configuration Example
+
+```typescript
+typeBlocking.init({
+  // Core settings
+  enableDynamicOptions: true,
+
+  // Pattern recognition for natural input
+  enablePatternRecognition: true,
+  patternConfig: {
+    enableNumberDetection: true,
+    enableTextDetection: true,
+    enableBooleanDetection: true,
+    enableMathExpressions: true,
+    enableVariableAssignments: true,
+    confidenceThreshold: 0.8
+  },
+
+  // Smart block connections
+  enableSmartConnection: true,
+  connectionConfig: {
+    enableAutoConnection: true,
+    connectionRadius: 250,
+    maxNearbyBlocks: 15
+  },
+
+  // Fixed input position (accessibility-friendly)
+  inputPositioning: {
+    mode: 'fixed',
+    fixedPosition: { x: 20, y: 20 }
+  },
+
+  // Custom option generation
+  optionGenerator: new CustomOptionGenerator()
+});
+```
+
+### Custom Options (Legacy Mode)
 
 ```typescript
 // Static options (legacy mode)
@@ -154,15 +254,37 @@ pointing to an internationalized string that describes the block's functionality
 
 This is still a work in progress, so watch this space for updates.
 
+### Smart Pattern Recognition
+
+The plugin recognizes natural input patterns and creates appropriate blocks:
+
+1. **Numbers**: `42`, `3.14`, `-5` → `math_number` blocks
+2. **Text**: `"hello world"`, `'text'` → `text` blocks
+3. **Booleans**: `true`, `false` → `logic_boolean` blocks
+4. **Math Expressions**: `2 + 3`, `10 / 2` → `math_arithmetic` blocks with connected operands
+5. **Variable Assignments**: `set x to 5` → `variables_set` block with connected value
+
+### Contextual Block Connections
+
+When blocks are created, the plugin automatically:
+
+1. **Finds nearby compatible blocks** within a configurable radius
+2. **Prioritizes connections** based on compatibility and context
+3. **Connects blocks intelligently** using multiple connection strategies:
+   - **Value Input**: Connects output blocks to input connections
+   - **Statement Sequence**: Connects statement blocks in sequence
+   - **Statement Insertion**: Inserts blocks within statement chains
 
 ### Automatic Block Creation
 
 When users select options, the plugin:
 
-1. **Parses typeblock text** using regex patterns
-2. **Creates appropriate block types** (e.g., `variables_get`, `procedures_callnoreturn`)
-3. **Configures block fields** (variable references, procedure names)
-4. **Handles some special cases** (dropdowns)
+1. **Tries pattern recognition first** for natural input
+2. **Falls back to typeblock parsing** using regex patterns
+3. **Creates appropriate block types** (e.g., `variables_get`, `procedures_callnoreturn`)
+4. **Configures block fields** (variable references, procedure names)
+5. **Positions blocks intelligently** with anti-overlap logic
+6. **Attempts smart connections** to nearby compatible blocks
 
 ### Performance & Caching
 
@@ -203,10 +325,22 @@ class TypeBlocking {
 }
 
 interface InstallOptions {
+  // Core Options
   options?: string[];                    // Static options (legacy mode)
   matcher?: Matcher;                     // Custom matching function
   optionGenerator?: OptionGenerator;     // Custom option generation
   enableDynamicOptions?: boolean;        // Enable/disable dynamic features (default: true)
+
+  // Pattern Recognition
+  enablePatternRecognition?: boolean;    // Enable natural input patterns (default: true)
+  patternConfig?: PatternConfig;         // Pattern recognition configuration
+
+  // Smart Connections
+  enableSmartConnection?: boolean;       // Enable intelligent block connections (default: true)
+  connectionConfig?: ConnectionConfig;   // Connection behavior configuration
+
+  // Input Positioning
+  inputPositioning?: InputPositioningConfig; // Control floating input position
 }
 ```
 
@@ -226,6 +360,32 @@ interface ScopeAnalyzer {
 
 interface Matcher {
   (options: string[], query: string): string[];
+}
+
+interface PatternConfig {
+  enableNumberDetection?: boolean;       // Detect numeric input (default: true)
+  enableTextDetection?: boolean;         // Detect quoted strings (default: true)
+  enableBooleanDetection?: boolean;      // Detect true/false (default: true)
+  enableMathExpressions?: boolean;       // Detect "2 + 3" style input (default: true)
+  enableVariableAssignments?: boolean;   // Detect "set x to value" (default: true)
+  customPatterns?: InputPattern[];       // Add custom pattern recognizers
+  patternPriorities?: Record<string, number>; // Override pattern priorities
+  confidenceThreshold?: number;          // Minimum confidence for pattern match (default: 0.7)
+}
+
+interface ConnectionConfig {
+  enableAutoConnection?: boolean;        // Auto-connect blocks (default: true)
+  connectionRadius?: number;             // Search radius in pixels (default: 200)
+  maxNearbyBlocks?: number;             // Max blocks to consider (default: 10)
+  strategies?: ConnectionStrategy[];     // Custom connection strategies
+}
+
+interface InputPositioningConfig {
+  mode?: 'mouse' | 'fixed';             // Positioning mode (default: 'mouse')
+  fixedPosition?: {                     // Position when mode is 'fixed'
+    x: number;                          // X pixels from workspace left (default: 100)
+    y: number;                          // Y pixels from workspace top (default: 10)
+  };
 }
 ```
 
