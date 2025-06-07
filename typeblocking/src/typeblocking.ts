@@ -1,6 +1,6 @@
 import * as Blockly from "blockly/core";
 import {SHORTCUT} from "./constants";
-import {Option, Matcher, OptionGenerator, WorkspaceStateTracker} from './types';
+import {Option, Matcher, OptionGenerator, WorkspaceStateTracker, InputPositioningConfig} from './types';
 import {WorkspaceOptionGenerator} from './autocomplete/option-generator';
 import {SmartOptionGenerator} from './autocomplete/smart-option-generator';
 import {DefaultWorkspaceStateTracker} from './autocomplete/workspace-state-tracker';
@@ -18,6 +18,7 @@ export interface InstallOptions {
     connectionConfig?: ConnectionConfig;
     enablePatternRecognition?: boolean;
     patternConfig?: PatternConfig;
+    inputPositioning?: InputPositioningConfig;
 }
 /**
  * Create blocks by typing instead of navigating through the toolbox.
@@ -65,7 +66,8 @@ export class TypeBlocking {
             enableSmartConnection: options.enableSmartConnection,
             connectionConfig: options.connectionConfig,
             enablePatternRecognition: options.enablePatternRecognition,
-            patternConfig: options.patternConfig
+            patternConfig: options.patternConfig,
+            inputPositioning: options.inputPositioning
         });
     }
 
@@ -82,7 +84,8 @@ export class TypeBlocking {
             enableSmartConnection: options.enableSmartConnection,
             connectionConfig: options.connectionConfig,
             enablePatternRecognition: options.enablePatternRecognition,
-            patternConfig: options.patternConfig
+            patternConfig: options.patternConfig,
+            inputPositioning: options.inputPositioning
         });
     }
 
@@ -127,7 +130,7 @@ export class TypeBlocking {
         console.info(`Typeblocking disposed from workspace ${id}`);
     }
 
-    installFloatingInput({options = [], matcher, enableSmartConnection, connectionConfig, enablePatternRecognition, patternConfig}: InstallOptions): void {
+    installFloatingInput({options = [], matcher, enableSmartConnection, connectionConfig, enablePatternRecognition, patternConfig, inputPositioning}: InstallOptions): void {
         this.controller = new DynamicFloatingInputController(
             this.workspace,
             {
@@ -138,7 +141,8 @@ export class TypeBlocking {
                 enableSmartConnection,
                 connectionConfig,
                 enablePatternRecognition,
-                patternConfig
+                patternConfig,
+                inputPositioning
             }
         );
 

@@ -25,3 +25,23 @@ export interface ScopeAnalyzer {
   getLocalVariablesInScope(): string[];
   getLocalVariablesFromSelection?(): string[];
 }
+
+export type InputPositioningMode = 'mouse' | 'fixed';
+
+export interface InputPositioningConfig {
+  /**
+   * How to position the floating input widget.
+   * - 'mouse': Position at the last mouse coordinates (default)
+   * - 'fixed': Position at a fixed location (top-left of workspace)
+   */
+  mode?: InputPositioningMode;
+
+  /**
+   * When mode is 'fixed', the position to use.
+   * Defaults to top-left corner with some padding.
+   */
+  fixedPosition?: {
+    x: number;
+    y: number;
+  };
+}

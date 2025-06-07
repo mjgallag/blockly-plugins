@@ -1,5 +1,5 @@
 import * as Blockly from 'blockly/core';
-import {Option, Matcher, OptionGenerator} from '../types';
+import {Option, Matcher, OptionGenerator, InputPositioningConfig} from '../types';
 import {substringMatcher} from './matcher';
 import {Renderer} from './renderer';
 import {BlockFactory} from '../block-actions/block-factory';
@@ -21,6 +21,7 @@ export class FloatingInputController {
   private readonly connectionManager?: ConnectionManager;
   private readonly patternManager?: InputPatternManager;
   private readonly optionGenerator?: OptionGenerator;
+  private readonly inputPositioning: Required<InputPositioningConfig>;
 
   constructor(
     private readonly ws: Blockly.WorkspaceSvg,
@@ -32,12 +33,18 @@ export class FloatingInputController {
       enablePatternRecognition?: boolean;
       patternConfig?: PatternConfig;
       optionGenerator?: OptionGenerator;
+      inputPositioning?: InputPositioningConfig;
     },
   ) {
     this.ws = ws;
     this.options = opts.options;
     this.matcher = opts.matcher ?? substringMatcher;
     this.optionGenerator = opts.optionGenerator;
+
+    this.inputPositioning = {
+      mode: opts.inputPositioning?.mode ?? 'mouse',
+      fixedPosition: opts.inputPositioning?.fixedPosition ?? { x: 100, y: 10 }
+    };
 
     this.blockFactory = new BlockFactory(ws);
     this.blockPositioner = new BlockPositioner(ws);
@@ -152,12 +159,27 @@ export class FloatingInputController {
 
   private positionWidgetDiv(): void {
     const div = Blockly.WidgetDiv.getDiv()!;
-    let {lastX: left, lastY: top} = this;
-    if (!left && !top) {
-      const r = this.ws.getInjectionDiv().getBoundingClientRect();
-      left = r.left + r.width / 2;
-      top = r.top + r.height / 2;
+    let left: number;
+    let top: number;
+
+    if (this.inputPositioning.mode === 'fixed') {
+      // Use fixed position relative to the workspace
+      const workspaceRect = this.ws.getInjectionDiv().getBoundingClientRect();
+      left = workspaceRect.left + this.inputPositioning.fixedPosition.x;
+      top = workspaceRect.top + this.inputPositioning.fixedPosition.y;
+    } else {
+      // Use mouse-based positioning
+      left = this.lastX;
+      top = this.lastY;
+
+      // Fallback to center if no mouse position available
+      if (!left && !top) {
+        const r = this.ws.getInjectionDiv().getBoundingClientRect();
+        left = r.left + r.width / 2;
+        top = r.top + r.height / 2;
+      }
     }
+
     Object.assign(div.style, {
       position: 'fixed',
       left: `${left}px`,

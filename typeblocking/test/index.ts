@@ -25,7 +25,12 @@ function createWorkspace(
   const workspace = Blockly.inject(blocklyDiv, options);
 
   const plugin = new TypeBlocking(workspace);
-  plugin.init();
+  plugin.init({
+    inputPositioning: {
+        mode: 'fixed',
+        fixedPosition: { x: 125, y: 10 }
+      }
+  });
 
   return workspace;
 }
