@@ -161,10 +161,6 @@ export class WorkspaceOptionGenerator implements OptionGenerator {
   }
 
   private isValidBuiltinBlock(blockType: string): boolean {
-    const blockDefinition = Blockly.Blocks[blockType];
-    if (!blockDefinition) {
-      return false;
-    }
-    return true;
+    return Blockly.Blocks[blockType];
   }
 }

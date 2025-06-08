@@ -3,7 +3,7 @@ import {WorkspaceOptionGenerator} from './option-generator';
 import {InputPatternManager} from '../input-patterns/pattern-manager';
 import {getBuiltinPatterns} from '../input-patterns/builtin-patterns';
 import {Option, OptionGenerator, ScopeAnalyzer} from '../types';
-import {PatternConfig, InputSuggestion} from '../input-patterns/pattern-types';
+import {PatternConfig} from '../input-patterns/pattern-types';
 
 /**
  * Helper function to create an Option from a string.
@@ -281,42 +281,6 @@ export class SmartOptionGenerator extends WorkspaceOptionGenerator implements Op
     return combined;
   }
 
-  /**
-   * Get detailed suggestions with metadata.
-   */
-  getDetailedSuggestions(input: string): Array<{
-    text: string;
-    description: string;
-    type: 'pattern' | 'workspace' | 'builtin';
-    confidence: number;
-  }> {
-    const detailed = [];
-
-    const patternSuggestions = this.patternManager.getSuggestions(input);
-    for (const suggestion of patternSuggestions) {
-      detailed.push({
-        text: suggestion.text,
-        description: suggestion.description,
-        type: 'pattern' as const,
-        confidence: 0.9
-      });
-    }
-
-    const workspaceOptions = this.generateOptions();
-    for (const option of workspaceOptions.slice(0, 5)) {
-      const score = this.calculateRelevanceScore(option.displayText, input);
-      if (score > 20) {
-        detailed.push({
-          text: option.displayText,
-          description: 'From workspace',
-          type: 'workspace' as const,
-          confidence: score / 100
-        });
-      }
-    }
-
-    return detailed;
-  }
 
   /**
    * Override parent method to include scope analyzer support.
@@ -325,27 +289,6 @@ export class SmartOptionGenerator extends WorkspaceOptionGenerator implements Op
     super.setScopeAnalyzer(analyzer);
   }
 
-  /**
-   * Clear suggestion cache.
-   */
-  clearCache(): void {
-    this.lastInput = '';
-    this.lastSuggestions = [];
-    this.patternManager.clearCache();
-  }
 
-  /**
-   * Update pattern configuration.
-   */
-  updatePatternConfig(config: Partial<PatternConfig>): void {
-    this.patternManager.updateConfig(config);
-    this.clearCache();
-  }
 
-  /**
-   * Get the pattern manager for advanced usage.
-   */
-  getPatternManager(): InputPatternManager {
-    return this.patternManager;
-  }
 }
