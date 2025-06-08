@@ -157,7 +157,10 @@ typeBlocking.init({
 // Static options (legacy mode)
 typeBlocking.init({
   enableDynamicOptions: false,
-  options: ['custom block 1', 'custom block 2'],
+  options: [
+    { blockType: 'custom_block_1', displayText: 'custom block 1' },
+    { blockType: 'custom_block_2', displayText: 'custom block 2' }
+  ],
   matcher: customMatcherFunction
 });
 ```
@@ -167,10 +170,10 @@ typeBlocking.init({
 A made up example of how to implement a custom option generator for App Inventor:
 
 ```typescript
-import {OptionGenerator} from '@mit-app-inventor/blockly-typeblocking';
+import {OptionGenerator, Option} from '@mit-app-inventor/blockly-typeblocking';
 
 class AppInventorOptionGenerator implements OptionGenerator {
-  generateOptions(): string[] {
+  generateOptions(): Option[] {
     return [
       ...this.getVariableOptions(),
       ...this.getProcedureOptions(),
@@ -179,19 +182,29 @@ class AppInventorOptionGenerator implements OptionGenerator {
     ];
   }
 
-  getVariableOptions(): string[] {
+  getVariableOptions(): Option[] {
     // Custom variable option generation
-    return ['get global myVar', 'set global myVar to'];
+    return [
+      { blockType: 'get global myVar', displayText: 'get global myVar' },
+      { blockType: 'set global myVar to', displayText: 'set global myVar to' }
+    ];
   }
 
-  getProcedureOptions(): string[] {
+  getProcedureOptions(): Option[] {
     // Custom procedure option generation
-    return ['myProcedure', 'calculate(x, y)'];
+    return [
+      { blockType: 'myProcedure', displayText: 'myProcedure' },
+      { blockType: 'calculate(x, y)', displayText: 'calculate(x, y)' }
+    ];
   }
 
-  getBuiltinBlockOptions(): string[] {
-    // App Inventor's block library
-    return ['when Button.Click', 'set Label.Text to'];
+  getBuiltinBlockOptions(): Option[] {
+    // App Inventor's block library with user-friendly display text
+    return [
+      { blockType: 'when_Button_Click', displayText: 'when Button.Click' },
+      { blockType: 'set_Label_Text_to', displayText: 'set Label.Text to' },
+      { blockType: 'lists_create_with', displayText: 'create list with' }
+    ];
   }
 }
 
@@ -220,15 +233,15 @@ class LexicalScopeAnalyzer implements ScopeAnalyzer {
 ### Custom Matching
 
 ```typescript
-import {Matcher} from '@mit-app-inventor/blockly-typeblocking';
+import {Matcher, Option} from '@mit-app-inventor/blockly-typeblocking';
 
 const fuzzyMatcher: Matcher = (options, query) => {
-  // Custom fuzzy matching logic
+  // Custom fuzzy matching logic - matches against displayText
   return options.filter(option => 
-    option.toLowerCase().includes(query.toLowerCase())
+    option.displayText.toLowerCase().includes(query.toLowerCase())
   ).sort((a, b) => {
-    // Custom ranking logic
-    return a.indexOf(query) - b.indexOf(query);
+    // Custom ranking logic based on display text
+    return a.displayText.indexOf(query) - b.displayText.indexOf(query);
   });
 };
 
@@ -248,11 +261,13 @@ The plugin automatically generates typeblock options from your workspace:
 3. **Built-in Blocks**: Uses existing `typeblock` properties or generates from block types
 4. **Scope-Aware**: Local variables only appear when in scope (with proper scope analyzer)
 
-A note on built-in blocks: the default implementation likely does NOT what would be expected.
-A `typeblock` property should be used for all blocks, including built-in ones, ideally
-pointing to an internationalized string that describes the block's functionality.
+A note on built-in blocks: By default, blocks without a `typeblock` property will have their
+block type converted to display text by replacing underscores with spaces. For example:
+- `lists_create_with` displays as "lists create with"
+- `math_arithmetic` displays as "math arithmetic"
 
-This is still a work in progress, so watch this space for updates.
+For better user experience, blocks should define a `typeblock` property with human-friendly text.
+The plugin will use this text as the display text while still using the actual block type for creation.
 
 ### Smart Pattern Recognition
 
@@ -326,7 +341,7 @@ class TypeBlocking {
 
 interface InstallOptions {
   // Core Options
-  options?: string[];                    // Static options (legacy mode)
+  options?: Option[];                    // Static options (legacy mode)
   matcher?: Matcher;                     // Custom matching function
   optionGenerator?: OptionGenerator;     // Custom option generation
   enableDynamicOptions?: boolean;        // Enable/disable dynamic features (default: true)
@@ -347,11 +362,16 @@ interface InstallOptions {
 ### Customization Interfaces
 
 ```typescript
+interface Option {
+  blockType: string;    // The block type identifier used for block creation
+  displayText: string;  // Human-friendly display text shown in autocomplete
+}
+
 interface OptionGenerator {
-  generateOptions(): string[];
-  getVariableOptions(): string[];
-  getProcedureOptions(): string[];
-  getBuiltinBlockOptions(): string[];
+  generateOptions(): Option[];
+  getVariableOptions(): Option[];
+  getProcedureOptions(): Option[];
+  getBuiltinBlockOptions(): Option[];
 }
 
 interface ScopeAnalyzer {
@@ -359,7 +379,7 @@ interface ScopeAnalyzer {
 }
 
 interface Matcher {
-  (options: string[], query: string): string[];
+  (options: Option[], query: string): Option[];
 }
 
 interface PatternConfig {

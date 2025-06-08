@@ -6,6 +6,16 @@ import {Option, OptionGenerator, ScopeAnalyzer} from '../types';
 import {PatternConfig, InputSuggestion} from '../input-patterns/pattern-types';
 
 /**
+ * Helper function to create an Option from a string.
+ */
+function createOption(text: string): Option {
+  return {
+    blockType: text,
+    displayText: text
+  };
+}
+
+/**
  * Enhanced option generator that provides pattern-based suggestions and filtering.
  */
 export class SmartOptionGenerator extends WorkspaceOptionGenerator implements OptionGenerator {
@@ -58,24 +68,33 @@ export class SmartOptionGenerator extends WorkspaceOptionGenerator implements Op
     console.debug('SmartOptionGenerator: Pattern detection for', input, ':', detectionResult);
     if (detectionResult) {
       // Input matches a pattern - add it as primary suggestion
-      suggestions.push(input);
+      suggestions.push(createOption(input));
       console.debug('SmartOptionGenerator: Added pattern input as suggestion:', input);
     }
 
     // Get pattern-based suggestions
     const patternSuggestions = this.patternManager.getSuggestions(input);
     console.debug('SmartOptionGenerator: Pattern manager suggestions:', patternSuggestions);
-    suggestions.push(...patternSuggestions.map(s => s.text));
+    suggestions.push(...patternSuggestions.map(s => createOption(s.text)));
 
     // Add pattern examples if input is partial
     if (this.isPartialPatternInput(input)) {
       const examples = this.getPatternExamples(input);
       console.debug('SmartOptionGenerator: Pattern examples:', examples);
-      suggestions.push(...examples);
+      suggestions.push(...examples.map(example => createOption(example)));
     }
 
     console.debug('SmartOptionGenerator: Final pattern suggestions:', suggestions);
-    return [...new Set(suggestions)]; // Remove duplicates
+    // Remove duplicates based on both blockType and displayText
+    const seen = new Set<string>();
+    return suggestions.filter(option => {
+      const key = `${option.blockType}:${option.displayText}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
   }
 
   /**
@@ -100,8 +119,8 @@ export class SmartOptionGenerator extends WorkspaceOptionGenerator implements Op
   /**
    * Get example patterns that might be relevant to the input.
    */
-  private getPatternExamples(input: string): Option[] {
-    const examples: Option[] = [];
+  private getPatternExamples(input: string): string[] {
+    const examples: string[] = [];
 
     // Numeric input - suggest number-related patterns
     if (/^\d/.test(input)) {
@@ -142,7 +161,7 @@ export class SmartOptionGenerator extends WorkspaceOptionGenerator implements Op
     const scored = options
       .map(option => ({
         option,
-        score: this.calculateRelevanceScore(option, input)
+        score: this.calculateRelevanceScore(option.displayText, input)
       }))
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
@@ -230,27 +249,31 @@ export class SmartOptionGenerator extends WorkspaceOptionGenerator implements Op
     const seen = new Set<string>();
 
     for (const suggestion of patternSuggestions) {
-      if (!seen.has(suggestion)) {
+      const key = `${suggestion.blockType}:${suggestion.displayText}`;
+      if (!seen.has(key)) {
         combined.push(suggestion);
-        seen.add(suggestion);
+        seen.add(key);
       }
     }
 
     const maxFilteredOptions = Math.max(10, 20 - patternSuggestions.length);
     for (const option of filteredOptions.slice(0, maxFilteredOptions)) {
-      if (!seen.has(option)) {
+      const key = `${option.blockType}:${option.displayText}`;
+      if (!seen.has(key)) {
         combined.push(option);
-        seen.add(option);
+        seen.add(key);
       }
     }
 
     // If we don't have many suggestions and input is short, add some general options
     if (combined.length < 5 && input.length < 3) {
       const generalOptions = ['if', 'repeat', 'set variable', 'math', 'text', 'true', 'false'];
-      for (const option of generalOptions) {
-        if (!seen.has(option) && combined.length < 10) {
+      for (const optionText of generalOptions) {
+        const option = createOption(optionText);
+        const key = `${option.blockType}:${option.displayText}`;
+        if (!seen.has(key) && combined.length < 10) {
           combined.push(option);
-          seen.add(option);
+          seen.add(key);
         }
       }
     }
@@ -281,10 +304,10 @@ export class SmartOptionGenerator extends WorkspaceOptionGenerator implements Op
 
     const workspaceOptions = this.generateOptions();
     for (const option of workspaceOptions.slice(0, 5)) {
-      const score = this.calculateRelevanceScore(option, input);
+      const score = this.calculateRelevanceScore(option.displayText, input);
       if (score > 20) {
         detailed.push({
-          text: option,
+          text: option.displayText,
           description: 'From workspace',
           type: 'workspace' as const,
           confidence: score / 100

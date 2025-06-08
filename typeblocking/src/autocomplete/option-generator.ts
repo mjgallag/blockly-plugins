@@ -2,6 +2,14 @@ import * as Blockly from 'blockly/core';
 import {Option, OptionGenerator, ScopeAnalyzer} from '../types';
 
 /**
+ * Converts a block type identifier to a human-friendly display text.
+ * Rule: substitute underscores with spaces.
+ */
+function blockTypeToDisplayText(blockType: string): string {
+  return blockType.replace(/_/g, ' ');
+}
+
+/**
  * Generates dynamic options from workspace state including variables, procedures, and blocks.
  */
 export class WorkspaceOptionGenerator implements OptionGenerator {
@@ -20,7 +28,16 @@ export class WorkspaceOptionGenerator implements OptionGenerator {
     options.push(...this.getVariableOptions());
     options.push(...this.getProcedureOptions());
 
-    return [...new Set(options)];
+    // Remove duplicates based on both blockType and displayText
+    const seen = new Set<string>();
+    return options.filter(option => {
+      const key = `${option.blockType}:${option.displayText}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
   }
 
   getVariableOptions(): Option[] {
@@ -30,8 +47,14 @@ export class WorkspaceOptionGenerator implements OptionGenerator {
     const variables = this.workspace.getVariablesOfType('');
     for (const variable of variables) {
       const name = variable.getName();
-      options.push(`get ${name}`);
-      options.push(`set ${name} to`);
+      options.push({
+        blockType: `get ${name}`,
+        displayText: `get ${name}`
+      });
+      options.push({
+        blockType: `set ${name} to`,
+        displayText: `set ${name} to`
+      });
     }
 
     // Local variables (mostly for procedures, but can be extended)
@@ -39,8 +62,14 @@ export class WorkspaceOptionGenerator implements OptionGenerator {
       const localVars = this.scopeAnalyzer.getLocalVariablesInScope();
       console.log('Local variables in scope:', localVars);
       for (const varName of localVars) {
-        options.push(`get ${varName}`);
-        options.push(`set ${varName} to`);
+        options.push({
+          blockType: `get ${varName}`,
+          displayText: `get ${varName}`
+        });
+        options.push({
+          blockType: `set ${varName} to`,
+          displayText: `set ${varName} to`
+        });
       }
     }
 
@@ -58,11 +87,18 @@ export class WorkspaceOptionGenerator implements OptionGenerator {
         if (nameField) {
           const procName = nameField.getValue();
           if (procName && procName.trim()) {
-            options.push(procName);
+            options.push({
+              blockType: procName,
+              displayText: procName
+            });
 
             const paramNames = this.getProcedureParameters(block);
             if (paramNames.length > 0) {
-              options.push(`${procName}(${paramNames.join(', ')})`);
+              const blockTypeWithParams = `${procName}(${paramNames.join(', ')})`;
+              options.push({
+                blockType: blockTypeWithParams,
+                displayText: blockTypeWithParams
+              });
             }
           }
         }
@@ -83,9 +119,17 @@ export class WorkspaceOptionGenerator implements OptionGenerator {
       }
 
       if (blockDefinition.typeblock) {
-        options.push(blockDefinition.typeblock);
+        // Use the existing typeblock text as display, but block type for creation
+        options.push({
+          blockType: blockType,
+          displayText: blockDefinition.typeblock
+        });
       } else if (this.isValidBuiltinBlock(blockType)) {
-        options.push(blockType);
+        // Convert block type to human-friendly display text
+        options.push({
+          blockType: blockType,
+          displayText: blockTypeToDisplayText(blockType)
+        });
       }
     }
 

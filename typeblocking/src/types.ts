@@ -1,4 +1,9 @@
-export type Option = string;
+export interface Option {
+  /** The block type identifier used for block creation */
+  blockType: string;
+  /** Human-friendly display text shown in the autocomplete list */
+  displayText: string;
+}
 
 /** Any matching strategy must implement this signature. */
 export interface Matcher {

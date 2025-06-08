@@ -35,8 +35,8 @@ export class Renderer {
     this.list.innerHTML = '';
     suggestions.forEach((s) => {
       const li = document.createElement('li');
-      li.dataset.value = s;
-      li.textContent = s;
+      li.dataset.value = s.blockType;  // Store block type for block creation
+      li.textContent = s.displayText;  // Show human-friendly text
       this.list.appendChild(li);
     });
 
