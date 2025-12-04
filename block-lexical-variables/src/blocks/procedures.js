@@ -267,7 +267,7 @@ Blockly.Blocks['procedures_defnoreturn'] = {
       // procedure arguments_ list rather than mutate that list, but I'd be
       // wrong! Turns out that *not* mutating list here causes trouble below in
       // the line
-      // Blockly.Field.prototype.setText.call(mutatorarg.getTitle_("NAME"),
+      // Blockly.Field.prototype.setValue.call(mutatorarg.getTitle_("NAME"),
       // newParamName);  The reason is that this fires a change event in
       // mutator workspace, which causes a call to the proc decl compose()
       // method, and when it detects a difference in the arguments it calls
@@ -291,10 +291,10 @@ Blockly.Blocks['procedures_defnoreturn'] = {
 
       // 2. If there's an open mutator, change the name in the corresponding
       // slot.
-      if (procDecl.mutator && procDecl.mutator.rootBlock_) {
+      if (procDecl.mutator && procDecl.mutator.rootBlock) {
         // Iterate through mutatorarg param blocks and change name of one at
         // paramIndex
-        const mutatorContainer = procDecl.mutator.rootBlock_;
+        const mutatorContainer = procDecl.mutator.rootBlock;
         let mutatorargIndex = 0;
         let mutatorarg = mutatorContainer.getInputTargetBlock('STACK');
         while (mutatorarg && mutatorargIndex < paramIndex) {
@@ -307,13 +307,13 @@ Blockly.Blocks['procedures_defnoreturn'] = {
           // will be invoked several times, and on one of those times, it will
           // find new param name in the procedures arguments_ instance variable
           // and will try to renumber it (e.g. "a" -> "a2"). To avoid this,
-          // invoke the setText method of its Field s superclass directly.
+          // invoke the setValue method of its Field superclass directly.
           // I.e., can't do this:
           // mutatorarg.getTitle_("NAME").setValue(newParamName); so instead do
           // this:
           mutatorarg.getField('NAME').setValue(newParamName);
           // mutatorarg.getField("NAME").doValueUpdate_(newParamName);
-          //   Blockly.Field.prototype.setText.call(mutatorarg.getField("NAME"),
+          //   Blockly.Field.prototype.setValue.call(mutatorarg.getField("NAME"),
           // newParamName);
         }
       }
@@ -470,7 +470,7 @@ Blockly.Blocks['procedures_defnoreturn'] = {
       this.updateParams_(newParams);
       // Update the mutator's variables if the mutator is open.
       if (this.mutator.isVisible()) {
-        const blocks = this.mutator.workspace_.getAllBlocks();
+        const blocks = this.mutator.getWorkspace().getAllBlocks();
         for (let x = 0, block; block = blocks[x]; x++) {
           if (block.type == 'procedures_mutatorarg') {
             const oldName = block.getFieldValue('NAME');
@@ -643,13 +643,13 @@ Blockly.Blocks['procedures_mutatorarg'] = {
         LexicalVariable.renameParam);
     // 2017 Blockly's text input change breaks our renaming behavior.
     // The following is a version we've defined.
-    editor.onHtmlInputChange_ = function(e) {
+    editor.onHtmlInputChange = function(e) {
       const oldValue = this.getValue();
-      FieldFlydown.prototype.onHtmlInputChange_.call(this, e);
+      FieldFlydown.prototype.onHtmlInputChange.call(this, e);
       const newValue = this.getValue();
       if (newValue && oldValue !== newValue && Blockly.Events.isEnabled()) {
         Blockly.Events.fire(
-            new Blockly.Events.BlockChange(this.sourceBlock_, 'field', this.name,
+            new Blockly.Events.BlockChange(this.getSourceBlock(), 'field', this.name,
                 oldValue, newValue));
       }
     };
@@ -887,7 +887,7 @@ Blockly.Blocks['procedures_callnoreturn'] = {
         if (quarkName in this.quarkConnections_) {
           connection = this.quarkConnections_[quarkName];
           if (!connection || connection.targetConnection ||
-              connection.sourceBlock_.workspace != this.workspace) {
+              connection.getSourceBlock().workspace != this.workspace) {
             // Block no longer exists or has been attached elsewhere.
             delete this.quarkConnections_[quarkName];
           } else {

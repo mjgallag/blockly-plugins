@@ -457,10 +457,10 @@ Blockly.Blocks['local_declaration_statement'] = {
       newLocals[paramIndex] = newParamName;
 
       // If there's an open mutator, change the name in the corresponding slot.
-      if (localDecl.mutator && localDecl.mutator.rootBlock_) {
+      if (localDecl.mutator && localDecl.mutator.rootBlock) {
         // Iterate through mutatorarg param blocks and change name of one at
         // paramIndex
-        const mutatorContainer = localDecl.mutator.rootBlock_;
+        const mutatorContainer = localDecl.mutator.rootBlock;
         let mutatorargIndex = 0;
         let mutatorarg = mutatorContainer.getInputTargetBlock('STACK');
         while (mutatorarg && mutatorargIndex < paramIndex) {
@@ -585,7 +585,7 @@ Blockly.Blocks['local_declaration_statement'] = {
       this.updateDeclarationInputs_(renamedLocalNames, initializerConnections);
       // Update the mutator's variables if the mutator is open.
       if (this.mutator && this.mutator.isVisible()) {
-        const blocks = this.mutator.workspace_.getAllBlocks();
+        const blocks = this.mutator.getWorkspace().getAllBlocks();
         for (let x = 0, block; block = blocks[x]; x++) {
           if (block.type == 'procedures_mutatorarg') {
             const oldName = block.getFieldValue('NAME');
