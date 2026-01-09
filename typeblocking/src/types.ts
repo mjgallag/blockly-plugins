@@ -3,6 +3,10 @@ export interface Option {
   blockType: string;
   /** Human-friendly display text shown in the autocomplete list */
   displayText: string;
+  /** Extra state to apply to the block */
+  extraState?: any;
+  /** Field values to set on the block */
+  fieldValues?: Record<string, any>;
 }
 
 /** Any matching strategy must implement this signature. */

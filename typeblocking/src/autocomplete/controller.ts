@@ -58,11 +58,11 @@ export class FloatingInputController {
       this.connectionManager = new ConnectionManager(ws, opts.connectionConfig);
     }
 
-    ws.getInjectionDiv().addEventListener('pointermove', this.pointerMoveListener);
+    (ws.getInjectionDiv() as HTMLElement).addEventListener('pointermove', this.pointerMoveListener);
   }
 
   dispose(): void {
-    this.ws.getInjectionDiv().removeEventListener('pointermove', this.pointerMoveListener)
+    (this.ws.getInjectionDiv() as HTMLElement).removeEventListener('pointermove', this.pointerMoveListener)
     // TODO: remove event listeners - I will need access to them
     //this.renderer?.inputEl.removeEventListener('input', this.renderer?.inputEl);
   }
@@ -74,12 +74,11 @@ export class FloatingInputController {
     Blockly.WidgetDiv.show(
       {},
       this.ws.RTL,
-      () => this.ws.getInjectionDiv().focus(),
+      () => (this.ws.getInjectionDiv() as HTMLElement).focus(),
       this.ws,
-      true,
     );
 
-    const renderer = new Renderer((v) => this.choose(v), initial);
+    const renderer = new Renderer((option) => this.choose(option), initial);
     Blockly.WidgetDiv.getDiv()!.appendChild(renderer.root);
 
     this.positionWidgetDiv();
@@ -103,7 +102,7 @@ export class FloatingInputController {
     refresh();
 
     renderer.inputEl.addEventListener('keydown', (kev) => {
-      if (renderer.onKey(kev.key, (v) => this.choose(v))) kev.preventDefault();
+      if (renderer.onKey(kev.key, (option) => this.choose(option))) kev.preventDefault();
       else if (kev.key === 'Escape') Blockly.WidgetDiv.hide();
       kev.stopPropagation();
     });
@@ -113,48 +112,54 @@ export class FloatingInputController {
     setTimeout(() => renderer.focus());
   }
 
-  private choose(value: string): void {
-    console.debug('TypeBlocking: Choosing value:', value);
-    
+  private choose(option: Option): void {
+    console.debug('TypeBlocking: Choosing option:', option);
+
     let newBlock: Blockly.BlockSvg | undefined;
 
-    // First, try pattern recognition if enabled
-    if (this.patternManager) {
-      console.debug('TypeBlocking: Trying pattern recognition for:', value);
-      const instruction = this.patternManager.getBlockInstructions(value);
-      if (instruction) {
-        console.debug('TypeBlocking: Found pattern instruction:', instruction);
-        newBlock = this.blockFactory.createBlockFromInstruction(instruction);
-        if (newBlock) {
-          console.debug('TypeBlocking: Created block using pattern recognition:', newBlock.type);
+    // Group all events (creation, positioning, connection) for single undo
+    Blockly.Events.setGroup(true);
+    try {
+      // First, try pattern recognition if enabled
+      if (this.patternManager) {
+        console.debug('TypeBlocking: Trying pattern recognition for:', option.blockType);
+        const instruction = this.patternManager.getBlockInstructions(option.blockType);
+        if (instruction) {
+          console.debug('TypeBlocking: Found pattern instruction:', instruction);
+          newBlock = this.blockFactory.createBlockFromInstruction(instruction);
+          if (newBlock) {
+            console.debug('TypeBlocking: Created block using pattern recognition:', newBlock.type);
+          }
         }
       }
-    }
 
-    // Fall back to regular block creation if pattern recognition didn't work
-    if (!newBlock) {
-      console.debug('TypeBlocking: Falling back to regular block creation');
-      newBlock = this.blockFactory.createBlock(value);
+      // Fall back to regular block creation if pattern recognition didn't work
+      if (!newBlock) {
+        console.debug('TypeBlocking: Falling back to regular block creation');
+        newBlock = this.blockFactory.createBlock(option.blockType, option.extraState, option.fieldValues);
+        if (newBlock) {
+          console.debug('TypeBlocking: Created block using regular method:', newBlock.type);
+        }
+      }
+
       if (newBlock) {
-        console.debug('TypeBlocking: Created block using regular method:', newBlock.type);
-      }
-    }
+        // Position the block first
+        this.blockPositioner.positionBlock(newBlock, this.lastX, this.lastY);
 
-    if (newBlock) {
-      // Position the block first
-      this.blockPositioner.positionBlock(newBlock, this.lastX, this.lastY);
+        // Then attempt smart connection if enabled
+        if (this.connectionManager) {
+          this.connectionManager.attemptConnection(newBlock, this.lastX, this.lastY);
+        }
 
-      // Then attempt smart connection if enabled
-      if (this.connectionManager) {
-        this.connectionManager.attemptConnection(newBlock, this.lastX, this.lastY);
+        Blockly.common.setSelected(newBlock);
+      } else {
+        console.warn('TypeBlocking: Failed to create block for option:', option);
       }
-    } else {
-      console.warn('TypeBlocking: Failed to create block for value:', value);
+    } finally {
+      Blockly.Events.setGroup(false);
     }
 
     Blockly.WidgetDiv.hide();
-    // TODO: does this interfere with the new block's focus?
-    this.ws.getInjectionDiv().focus();
   }
 
   private positionWidgetDiv(): void {

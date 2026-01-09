@@ -13,6 +13,7 @@ export interface InstallOptions {
     options?: Option[];
     matcher?: Matcher;
     optionGenerator?: OptionGenerator;
+    workspaceStateTracker?: WorkspaceStateTracker;
     enableDynamicOptions?: boolean;
     enableSmartConnection?: boolean;
     connectionConfig?: ConnectionConfig;
@@ -58,7 +59,7 @@ export class TypeBlocking {
             this.optionGenerator.setScopeAnalyzer(scopeAnalyzer);
         }
 
-        this.stateTracker = new DefaultWorkspaceStateTracker(this.workspace);
+        this.stateTracker = options.workspaceStateTracker ?? new DefaultWorkspaceStateTracker(this.workspace);
 
         this.installFloatingInput({
             options: [], // Will be generated dynamically
@@ -163,11 +164,17 @@ export class TypeBlocking {
             true,
         );
 
-        const SKIP = new Set([8, 13, 46]); // 8 = Backspace, 13 = Enter, 46 = Delete
+        const SKIP = new Set([8, 13, 16, 46]); // 8 = Backspace, 13 = Enter, 16 = Shift, 46 = Delete
         // NOTE: Plain keys (no modifiers)
         for (let code = 0; code <= 222; ++code) {
             if (SKIP.has(code)) continue;
             Blockly.ShortcutRegistry.registry.addKeyMapping(code, SHORTCUT, true);
+            // Register shift+key (e.g. ")
+            Blockly.ShortcutRegistry.registry.addKeyMapping(
+                Blockly.ShortcutRegistry.registry.createSerializedKey(code, [Blockly.utils.KeyCodes.SHIFT]),
+                SHORTCUT,
+                true
+            );
         }
     }
 }

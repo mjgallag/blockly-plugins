@@ -6,8 +6,9 @@ export class Renderer {
   private input!: HTMLInputElement;
   private list!: HTMLUListElement;
   private highlighted = -1;
+  private suggestions: Option[] = [];
 
-  constructor(onChoose: (value: string) => void, initial = '') {
+  constructor(onChoose: (option: Option) => void, initial = '') {
     this.root = document.createElement('div');
     this.root.innerHTML = `
       <input type="text" spellcheck="false" class="fi-input" />
@@ -18,10 +19,23 @@ export class Renderer {
     this.list = this.root.querySelector('.fi-list') as HTMLUListElement;
     this.input.value = initial;
 
+    this.list.addEventListener('mousemove', (ev) => {
+      const li = (ev.target as HTMLElement).closest('li');
+      if (li) {
+        const idx = parseInt(li.dataset.idx!, 10);
+        if (idx !== this.highlighted) {
+          this.updateHighlight(idx);
+        }
+      }
+    });
+
     this.list.addEventListener('mousedown', (ev) => {
       ev.preventDefault();
       const li = (ev.target as HTMLElement).closest('li');
-      if (li) onChoose(li.dataset.value!);
+      if (li) {
+        const idx = parseInt(li.dataset.idx!, 10);
+        onChoose(this.suggestions[idx]);
+      }
     });
   }
 
@@ -32,10 +46,11 @@ export class Renderer {
   }
 
   setSuggestions(suggestions: Option[]): void {
+    this.suggestions = suggestions;
     this.list.innerHTML = '';
-    suggestions.forEach((s) => {
+    suggestions.forEach((s, idx) => {
       const li = document.createElement('li');
-      li.dataset.value = s.blockType;  // Store block type for block creation
+      li.dataset.idx = idx.toString();  // Store option index for block creation
       li.textContent = s.displayText;  // Show human-friendly text
       this.list.appendChild(li);
     });
@@ -50,12 +65,10 @@ export class Renderer {
     this.list.hidden = suggestions.length === 0;
   }
 
-  onKey(key: string, choose: (v: string) => void): boolean {
-    const items = Array.from(this.list.children) as HTMLElement[];
-
+  onKey(key: string, choose: (option: Option) => void): boolean {
     const commit = (): boolean => {
-      if (this.highlighted >= 0 && this.highlighted < items.length) {
-        choose(items[this.highlighted].dataset.value!);
+      if (this.highlighted >= 0 && this.highlighted < this.suggestions.length) {
+        choose(this.suggestions[this.highlighted]);
         return true;
       }
       return false;
@@ -63,7 +76,7 @@ export class Renderer {
 
     switch (key) {
       case 'ArrowDown':
-        this.updateHighlight(Math.min(this.highlighted + 1, items.length - 1));
+        this.updateHighlight(Math.min(this.highlighted + 1, this.suggestions.length - 1));
         return true;
       case 'ArrowUp':
         this.updateHighlight(Math.max(this.highlighted - 1, 0));

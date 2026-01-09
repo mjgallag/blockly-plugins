@@ -23,7 +23,6 @@
   cursor: pointer;
 }
 
-.fi-hl,
-.fi-list li:hover {
+.fi-hl {
   background: #bde4ff;
 }

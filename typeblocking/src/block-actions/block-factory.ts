@@ -10,9 +10,11 @@ export class BlockFactory {
   /**
    * Creates and renders a block from a type identifier.
    * @param value - The block type or typeblock identifier
+   * @param extraState - Extra state to apply to the block
+   * @param fieldValues - Field values to set on the block
    * @returns The created block or undefined if no block type found
    */
-  createBlock(value: string): Blockly.BlockSvg | undefined {
+  createBlock(value: string, extraState?: any, fieldValues?: Record<string, any>): Blockly.BlockSvg | undefined {
     // First try special variable/procedure patterns
     let block = this.createSpecialBlock(value);
     if (block) {
@@ -34,10 +36,17 @@ export class BlockFactory {
       return;
     }
 
-    block = this.workspace.newBlock(blockType);
-    block.initSvg();
-    block.render();
-    return block;
+    const blockState: any = { type: blockType };
+    if (extraState) {
+      blockState.extraState = extraState;
+    }
+    if (fieldValues) {
+      blockState.fields = {};
+      for (const [fieldName, value] of Object.entries(fieldValues)) {
+        blockState.fields[fieldName] = value;
+      }
+    }
+    return Blockly.serialization.blocks.append(blockState, this.workspace, {recordUndo: true}) as Blockly.BlockSvg;
   }
 
   /**
