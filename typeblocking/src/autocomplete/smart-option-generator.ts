@@ -146,7 +146,7 @@ export class SmartOptionGenerator extends WorkspaceOptionGenerator implements Op
     if (/^get/i.test(input)) {
       // Add actual variables from workspace
       const variables = this.workspace.getVariablesOfType('');
-      examples.push(...variables.map(v => `get ${v.name}`));
+      examples.push(...variables.map(v => `get ${v.getName()}`));
     }
 
     return examples;
