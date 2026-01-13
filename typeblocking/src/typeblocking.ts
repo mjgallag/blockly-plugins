@@ -164,7 +164,30 @@ export class TypeBlocking {
             true,
         );
 
-        const SKIP = new Set([8, 13, 16, 46]); // 8 = Backspace, 13 = Enter, 16 = Shift, 46 = Delete
+        const SKIP = new Set([
+            8,   // Backspace
+            9,   // Tab
+            13,  // Enter
+            16,  // Shift
+            17,  // Ctrl
+            18,  // Alt
+            19,  // Pause/Break
+            20,  // Caps Lock
+            27,  // Escape
+            33,  // Page Up
+            34,  // Page Down
+            35,  // End
+            36,  // Home
+            37,  // Left Arrow
+            38,  // Up Arrow
+            39,  // Right Arrow
+            40,  // Down Arrow
+            45,  // Insert
+            46,  // Delete
+            91,  // Meta
+            112, 113, 114, 115, 116, 117,  // F1-F6
+            118, 119, 120, 121, 122, 123   // F7-F12
+        ]);
         // NOTE: Plain keys (no modifiers)
         for (let code = 0; code <= 222; ++code) {
             if (SKIP.has(code)) continue;
