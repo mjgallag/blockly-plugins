@@ -66,10 +66,10 @@ export class BlockFactory {
           if (field) {
             // Special handling for variable fields
             if (fieldName === 'VAR' && (block.type === 'variables_set' || block.type === 'variables_get')) {
-              let variable = this.workspace.getVariable(value);
+              let variable = this.workspace.getVariableMap().getVariable(value);
               if (!variable) {
                 // Create the variable if it doesn't exist
-                variable = this.workspace.createVariable(value);
+                variable = this.workspace.getVariableMap().createVariable(value);
               }
               field.setValue(variable.getId());
             } else {
@@ -132,7 +132,7 @@ export class BlockFactory {
    * Create a variable getter block.
    */
   private createVariableGetter(variableName: string): Blockly.BlockSvg | undefined {
-    const variable = this.workspace.getVariable(variableName);
+    const variable = this.workspace.getVariableMap().getVariable(variableName);
     if (!variable) {
       console.warn(`Variable "${variableName}" not found`);
       return undefined;
@@ -149,7 +149,7 @@ export class BlockFactory {
    * Create a variable setter block.
    */
   private createVariableSetter(variableName: string): Blockly.BlockSvg | undefined {
-    const variable = this.workspace.getVariable(variableName);
+    const variable = this.workspace.getVariableMap().getVariable(variableName);
     if (!variable) {
       console.warn(`Variable "${variableName}" not found`);
       return undefined;
