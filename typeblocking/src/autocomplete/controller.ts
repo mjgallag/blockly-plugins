@@ -74,13 +74,18 @@ export class FloatingInputController {
     Blockly.WidgetDiv.show(
       {},
       this.ws.RTL,
-      () => this.ws.getInjectionDiv().focus(),
+      () => {
+        div.style.position = previousPosition;
+        this.ws.getInjectionDiv().focus();
+      },
       this.ws,
       true,
     );
 
     const renderer = new Renderer((option) => this.choose(option), initial);
-    Blockly.WidgetDiv.getDiv()!.appendChild(renderer.root);
+    const div = Blockly.WidgetDiv.getDiv()!;
+    const previousPosition = div.style.position;
+    div.appendChild(renderer.root);
 
     this.positionWidgetDiv();
 
